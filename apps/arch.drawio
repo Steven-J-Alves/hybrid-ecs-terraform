@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Title -->
+    <mxCell id="2" value="apps/ — ECS Workloads Terraform Stack" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="10" width="1200" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="3" value="4 environments × 2 apps. Each environment = one terraform init/apply in environments/{name}/. All share the same VPC and the same ECS clusters." style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="30" y="48" width="1200" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ===== ENVIRONMENTS ===== -->
+    <mxCell id="10" value="Environments (environments/)" style="swimlane;startSize=25;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="80" width="1200" height="100" as="geometry" />
+    </mxCell>
+
+    <mxCell id="11" value="prod&#xa;app/environments/prod&#xa;state: apps-terraform/prod/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="10">
+      <mxGeometry x="20" y="30" width="230" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="12" value="homolog&#xa;app/environments/homolog&#xa;state: apps-terraform/homolog/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="10">
+      <mxGeometry x="270" y="30" width="230" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="13" value="prod-app2&#xa;app/environments/prod-app2&#xa;state: apps-terraform/prod-app2/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="10">
+      <mxGeometry x="680" y="30" width="230" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="14" value="homolog-app2&#xa;app/environments/homolog-app2&#xa;state: apps-terraform/homolog-app2/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="10">
+      <mxGeometry x="930" y="30" width="230" height="55" as="geometry" />
+    </mxCell>
+
+    <!-- Divider label -->
+    <mxCell id="15" value="app (5 workloads + Aurora)" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;rounded=1;align=center;fontSize=11;fontStyle=1;" vertex="1" parent="10">
+      <mxGeometry x="135" y="5" width="230" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="16" value="app2 (same pattern)" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;rounded=1;align=center;fontSize=11;fontStyle=1;" vertex="1" parent="10">
+      <mxGeometry x="795" y="5" width="230" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- ===== REMOTE STATE DEPS ===== -->
+    <mxCell id="20" value="Remote State &amp; Data Sources (read-only dependencies)" style="swimlane;startSize=25;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="210" width="1200" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="21" value="cluster/ remote state&#xa;→ ecs_cluster_id, ecs_cluster_name&#xa;→ https_listener_arn_private&#xa;→ http_listener_arn_private&#xa;→ https_listener_arn_public&#xa;→ alb_dns_private, alb_dns_public" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="20">
+      <mxGeometry x="20" y="30" width="400" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="22" value="AWS Data Sources (tag-based)&#xa;→ aws_vpc (10.220.0.0/16)&#xa;→ aws_subnets private (4 AZs)&#xa;→ aws_security_group data-private-sg&#xa;→ aws_availability_zones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="20">
+      <mxGeometry x="440" y="30" width="360" height="50" as="geometry" />
+    </mxCell>
+
+    <mxCell id="23" value="Route53&#xa;→ aws_route53_zone&#xa;   kriolu-kloud.cv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="20">
+      <mxGeometry x="820" y="30" width="200" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- ===== APP MODULE ===== -->
+    <mxCell id="30" value="app/ module  (base_name = p-app / h-app)" style="swimlane;startSize=25;fillColor=#f0f4ff;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="30" y="330" width="620" height="480" as="geometry" />
+    </mxCell>
+
+    <!-- HTTP workloads -->
+    <mxCell id="31" value="HTTP Workloads" style="swimlane;startSize=20;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="30">
+      <mxGeometry x="20" y="40" width="580" height="180" as="geometry" />
+    </mxCell>
+
+    <mxCell id="32" value="workload_front&#xa;type: http | port: 80&#xa;host: app.kriolu-kloud.cv&#xa;public_listener: YES&#xa;max: 3 tasks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="31">
+      <mxGeometry x="20" y="30" width="170" height="125" as="geometry" />
+    </mxCell>
+
+    <mxCell id="33" value="workload_api&#xa;type: http | port: 4004&#xa;host: app-api.kriolu-kloud.cv&#xa;public_listener: NO&#xa;http_listener: YES (HTTP:80)&#xa;max: 15 tasks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="31">
+      <mxGeometry x="210" y="30" width="170" height="125" as="geometry" />
+    </mxCell>
+
+    <mxCell id="34" value="Route53 A alias&#xa;app.kriolu-kloud.cv → ALB Public&#xa;app-api.kriolu-kloud.cv → ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="31">
+      <mxGeometry x="395" y="50" width="170" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- Worker workloads -->
+    <mxCell id="35" value="Worker Workloads (type=worker — no ALB, no TG, no listener rule)" style="swimlane;startSize=20;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="30">
+      <mxGeometry x="20" y="240" width="580" height="110" as="geometry" />
+    </mxCell>
+
+    <mxCell id="36" value="workload_worker&#xa;max: 15 tasks&#xa;API_URL=http://app-api..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="35">
+      <mxGeometry x="20" y="25" width="160" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="37" value="workload_scheduler&#xa;max: 8 tasks&#xa;API_URL=http://app-api..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="35">
+      <mxGeometry x="200" y="25" width="160" height="70" as="geometry" />
+    </mxCell>
+    <mxCell id="38" value="workload_manager&#xa;max: 3 tasks&#xa;API_URL=http://app-api..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="35">
+      <mxGeometry x="380" y="25" width="160" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- Aurora -->
+    <mxCell id="39" value="Aurora PostgreSQL 17 Cluster&#xa;db.t4g.large | db: app | user: app_user&#xa;private subnets | data-private-sg&#xa;password: TF_VAR_rds_db_password" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="30">
+      <mxGeometry x="20" y="370" width="580" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- IAM -->
+    <mxCell id="40" value="IAM: execution_role + task_role&#xa;(shared by all 5 workloads)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="30">
+      <mxGeometry x="20" y="455" width="280" height="15" as="geometry" />
+    </mxCell>
+
+    <!-- ===== APP2 MODULE ===== -->
+    <mxCell id="50" value="app2/ module  (base_name = p-app2 / h-app2)  — same structure as app/" style="swimlane;startSize=25;fillColor=#f0f4ff;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="680" y="330" width="550" height="480" as="geometry" />
+    </mxCell>
+
+    <mxCell id="51" value="workload_api (http | 4004 | app2-api.kriolu-kloud.cv)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="50">
+      <mxGeometry x="20" y="50" width="510" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="52" value="workload_front (http | 80 | app2.kriolu-kloud.cv | public)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="50">
+      <mxGeometry x="20" y="105" width="510" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="53" value="workload_worker / workload_scheduler / workload_manager (type=worker)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="50">
+      <mxGeometry x="20" y="165" width="510" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="54" value="Aurora PostgreSQL 17 | db.t4g.large | db: app2 | user: app_user" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="50">
+      <mxGeometry x="20" y="225" width="510" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="55" value="IAM: execution_role + task_role (shared by all workloads)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="50">
+      <mxGeometry x="20" y="280" width="510" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="56" value="Route53: app2.kriolu-kloud.cv → ALB Public&#xa;           app2-api.kriolu-kloud.cv → ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="50">
+      <mxGeometry x="20" y="325" width="510" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- ===== BACKEND ===== -->
+    <mxCell id="60" value="Terraform Backend (S3 + DynamoDB — one state file per environment)" style="swimlane;startSize=25;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="840" width="1200" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="61" value="S3: kriolu-kloud-terraform-tfstates&#xa;key: apps-terraform/prod/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="60">
+      <mxGeometry x="20" y="30" width="220" height="35" as="geometry" />
+    </mxCell>
+    <mxCell id="62" value="S3: kriolu-kloud-terraform-tfstates&#xa;key: apps-terraform/homolog/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="60">
+      <mxGeometry x="260" y="30" width="220" height="35" as="geometry" />
+    </mxCell>
+    <mxCell id="63" value="S3: kriolu-kloud-terraform-tfstates&#xa;key: apps-terraform/prod-app2/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="60">
+      <mxGeometry x="500" y="30" width="220" height="35" as="geometry" />
+    </mxCell>
+    <mxCell id="64" value="S3: kriolu-kloud-terraform-tfstates&#xa;key: apps-terraform/homolog-app2/..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="60">
+      <mxGeometry x="740" y="30" width="220" height="35" as="geometry" />
+    </mxCell>
+    <mxCell id="65" value="DynamoDB lock:&#xa;apps-lock / apps2-lock" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="60">
+      <mxGeometry x="980" y="30" width="180" height="35" as="geometry" />
+    </mxCell>
+
+    <!-- ===== WORKLOAD MODULE LEGEND ===== -->
+    <mxCell id="70" value="Each workload calls: modules/ecs_ec2/workload/ → ECR + SG + TG(s) + Listener rule(s) + task_definition + service + autoscaling" style="text;html=1;strokeColor=#d79b00;fillColor=#fff7e6;align=left;rounded=1;spacingLeft=8;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="30" y="935" width="1200" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- Edges: environments → modules -->
+    <mxCell id="80" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="11" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="81" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="12" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="82" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="13" target="50" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="83" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="14" target="50" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Edges: remote state → modules -->
+    <mxCell id="84" value="platform_cluster_id&#xa;listener ARNs" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;" edge="1" source="21" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="85" value="platform_cluster_id&#xa;listener ARNs" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#d6b656;" edge="1" source="21" target="50" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>

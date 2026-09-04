@@ -1,0 +1,31 @@
+variable "min_capacity" {
+  description = "The minimal number of ECS tasks to run"
+  type        = number
+}
+
+variable "max_capacity" {
+  description = "The maximal number of ECS tasks to run"
+  type        = number
+}
+
+variable "cluster_name" {
+  description = "The name of the ECS cluster"
+  type        = string
+}
+
+variable "name" {
+  description = "The name for the ECS service"
+  type        = string
+}
+
+variable "cpu_target" {
+  description = "Target value for ECSServiceAverageCPUUtilization target-tracking policy"
+  type        = number
+  default     = 50
+}
+
+variable "memory_target" {
+  description = "Target value for ECSServiceAverageMemoryUtilization target-tracking policy"
+  type        = number
+  default     = 50
+}

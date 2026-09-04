@@ -1,0 +1,163 @@
+# Apply order: network → cluster → apps
+# Branches: main → prod | homolog → homolog
+# Both environments share the same network stack (prod VPC).
+
+stages:
+  - validate
+  - plan
+  - apply
+  - destroy
+
+# ── Job templates (hidden) ────────────────────────────────────────────────────
+
+.cluster_validate:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: validate
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR validate
+
+.cluster_plan:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: plan
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR plan -input=false -out=tfplan
+
+.cluster_apply:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: apply
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR apply -input=false -auto-approve
+  when: manual
+  allow_failure: false
+
+.cluster_destroy:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: destroy
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR destroy -input=false -auto-approve
+  when: manual
+  needs: []
+
+# ── PROD — main branch ────────────────────────────────────────────────────────
+
+cluster:validate:
+  extends: .cluster_validate
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+
+cluster:plan:
+  extends: .cluster_plan
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
+  artifacts:
+    paths:
+      - cluster/environments/prod/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+  needs:
+    - cluster:validate
+
+cluster:apply:
+  extends: .cluster_apply
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+  needs:
+    - cluster:plan
+
+cluster:destroy:
+  extends: .cluster_destroy
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+
+# ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
+
+cluster:homolog:validate:
+  extends: .cluster_validate
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+
+cluster:homolog:plan:
+  extends: .cluster_plan
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+  artifacts:
+    paths:
+      - cluster/environments/homolog/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+  needs:
+    - cluster:homolog:validate
+
+cluster:homolog:apply:
+  extends: .cluster_apply
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+  needs:
+    - cluster:homolog:plan
+
+cluster:homolog:destroy:
+  extends: .cluster_destroy
+  variables:
+    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - cluster/**/*
+        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'

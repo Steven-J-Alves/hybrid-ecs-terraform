@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- Title -->
+    <mxCell id="2" value="bootstrap/ — Remote State Backend" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="10" width="600" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- Apply note -->
+    <mxCell id="3" value="Applied ONCE, with local state. Creates the backend for all other stacks." style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+      <mxGeometry x="30" y="48" width="600" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- Bootstrap stack box -->
+    <mxCell id="10" value="bootstrap/ (local state)" style="swimlane;startSize=30;fillColor=#f0f4ff;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="30" y="80" width="620" height="230" as="geometry" />
+    </mxCell>
+
+    <mxCell id="11" value="main.tf" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="10">
+      <mxGeometry x="20" y="45" width="80" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="12" value="variables.tf" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="10">
+      <mxGeometry x="120" y="45" width="90" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="13" value="outputs.tf" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="10">
+      <mxGeometry x="230" y="45" width="90" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="14" value="terraform.tfstate&#xa;(committed to git)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="10">
+      <mxGeometry x="340" y="45" width="160" height="40" as="geometry" />
+    </mxCell>
+
+    <mxCell id="15" value="iam/" style="swimlane;startSize=20;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="10">
+      <mxGeometry x="20" y="110" width="580" height="100" as="geometry" />
+    </mxCell>
+    <mxCell id="16" value="network-policy.json&#xa;VPC + ACM + S3 + DynamoDB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="15">
+      <mxGeometry x="10" y="25" width="170" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="17" value="cluster-policy.json&#xa;ECS + EC2 + ALB + IAM&#xa;+ S3 + DynamoDB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="15">
+      <mxGeometry x="200" y="25" width="170" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="18" value="apps-policy.json&#xa;ECS + ECR + Route53&#xa;+ RDS + S3 + DynamoDB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="15">
+      <mxGeometry x="390" y="25" width="170" height="55" as="geometry" />
+    </mxCell>
+
+    <!-- S3 bucket -->
+    <mxCell id="20" value="S3 Bucket&#xa;kriolu-kloud-terraform-tfstates&#xa;Versioning ON | AES-256 | Public access BLOCKED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="700" y="80" width="300" height="80" as="geometry" />
+    </mxCell>
+
+    <!-- DynamoDB tables -->
+    <mxCell id="30" value="DynamoDB Lock Tables (PAY_PER_REQUEST)" style="swimlane;startSize=25;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="700" y="190" width="430" height="230" as="geometry" />
+    </mxCell>
+
+    <mxCell id="31" value="kriolu-kloud-network-terraform-lock&#xa;→ used by network/environments/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+      <mxGeometry x="20" y="35" width="390" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="32" value="kriolu-kloud-cluster-terraform-lock&#xa;→ used by cluster/environments/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+      <mxGeometry x="20" y="85" width="390" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="33" value="kriolu-kloud-apps-terraform-lock&#xa;→ used by apps/app/environments/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+      <mxGeometry x="20" y="135" width="390" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="34" value="kriolu-kloud-apps2-terraform-lock&#xa;→ used by apps/app2/environments/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="30">
+      <mxGeometry x="20" y="180" width="390" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- Downstream stacks -->
+    <mxCell id="40" value="network/ stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="30" y="370" width="130" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="41" value="cluster/ stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="190" y="370" width="130" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="42" value="apps/app/ stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="350" y="370" width="130" height="50" as="geometry" />
+    </mxCell>
+    <mxCell id="43" value="apps/app2/ stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+      <mxGeometry x="510" y="370" width="130" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- Arrows from bootstrap to S3 and DynamoDB -->
+    <mxCell id="50" value="creates" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="10" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="51" value="creates (4 tables)" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="10" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Arrows from downstream stacks to S3 -->
+    <mxCell id="52" value="S3 backend" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#82b366;" edge="1" source="40" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="53" value="S3 backend" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#82b366;" edge="1" source="41" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="54" value="S3 backend" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#82b366;" edge="1" source="42" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="55" value="S3 backend" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#82b366;" edge="1" source="43" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Arrows from downstream stacks to DynamoDB -->
+    <mxCell id="56" value="DynamoDB lock" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;" edge="1" source="40" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="57" value="DynamoDB lock" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;" edge="1" source="41" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="58" value="DynamoDB lock" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;" edge="1" source="42" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="59" value="DynamoDB lock" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#9673a6;" edge="1" source="43" target="30" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Apply order -->
+    <mxCell id="60" value="Apply order: ✅ bootstrap → network → cluster → apps (app + app2 per env)" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=left;verticalAlign=middle;spacingLeft=8;rounded=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="450" width="580" height="30" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>

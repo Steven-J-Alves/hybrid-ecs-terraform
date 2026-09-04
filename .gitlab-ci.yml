@@ -1,0 +1,4 @@
+include:
+  - local: network/.gitlab-ci.yml
+  - local: cluster/.gitlab-ci.yml
+  - local: apps/.gitlab-ci.yml

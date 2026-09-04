@@ -1,0 +1,261 @@
+# Apply order: network → cluster → apps
+# Branches: main → prod | homolog → homolog
+# apps2: prod (prod-app2) + homolog (homolog-app2).
+
+stages:
+  - validate
+  - plan
+  - apply
+  - destroy
+
+# ── Job templates (hidden) ────────────────────────────────────────────────────
+
+.apps_validate:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: validate
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR validate
+
+.apps_plan:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: plan
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR plan -input=false -out=tfplan
+
+.apps_apply:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: apply
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR apply -input=false -auto-approve
+  when: manual
+  allow_failure: false
+
+.apps_destroy:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [docker]
+  stage: destroy
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR destroy -input=false -auto-approve
+  when: manual
+  needs: []
+
+# ── PROD — main branch ────────────────────────────────────────────────────────
+
+apps:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod"
+    CLUSTER_STATE_ENV: "prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+apps:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod"
+  artifacts:
+    paths:
+      - apps/environments/prod/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:validate
+
+apps:apply:
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:plan
+
+apps:destroy:
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+# ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
+
+apps:homolog:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog"
+    CLUSTER_STATE_ENV: "homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+apps:homolog:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog"
+  artifacts:
+    paths:
+      - apps/environments/homolog/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:homolog:validate
+
+apps:homolog:apply:
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps:homolog:plan
+
+apps:homolog:destroy:
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+# ==========================================================================
+# APP2 — prod (main branch) + homolog (homolog branch)
+# ==========================================================================
+
+apps2:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
+    CLUSTER_STATE_ENV: "prod"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+apps2:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
+  artifacts:
+    paths:
+      - apps/environments/prod-app2/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps2:validate
+
+apps2:apply:
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps2:plan
+
+apps2:destroy:
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/prod-app2"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+# ── APP2 HOMOLOG — homolog branch ─────────────────────────────────────────────
+
+apps2:homolog:validate:
+  extends: .apps_validate
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
+    CLUSTER_STATE_ENV: "homolog"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+
+apps2:homolog:plan:
+  extends: .apps_plan
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
+  artifacts:
+    paths:
+      - apps/environments/homolog-app2/tfplan
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps2:homolog:validate
+
+apps2:homolog:apply:
+  extends: .apps_apply
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*
+  needs:
+    - apps2:homolog:plan
+
+apps2:homolog:destroy:
+  extends: .apps_destroy
+  variables:
+    APPS_TF_WORKDIR: "apps/environments/homolog-app2"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - apps/**/*
+        - modules/**/*

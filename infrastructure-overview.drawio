@@ -1,0 +1,504 @@
+<mxfile host="app.diagrams.net" modified="2026-08-20" version="24.0" type="device">
+  <diagram id="kriolu-kloud-ecs-arch" name="Kriolu Kloud — ECS Architecture">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TITLE
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="title" value="Kriolu Kloud — AWS ECS Infrastructure (us-east-1)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=22;fontStyle=1;fontColor=#232F3E;" vertex="1" parent="1">
+          <mxGeometry x="500" y="12" width="1400" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             EXTERNAL LAYER
+             ═══════════════════════════════════════════════════════════ -->
+
+        <!-- Internet -->
+        <mxCell id="internet" value="🌐 Internet / Users" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Route53 -->
+        <mxCell id="route53" value="Route 53&#xa;kriolu-kloud.cv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8C4FFF;fontColor=#ffffff;strokeColor=#6929C4;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="70" width="170" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- GitLab CI -->
+        <mxCell id="gitlab" value="GitLab CI&#xa;(gitlab.kriolu-kloud.cv)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E24329;fontColor=#ffffff;strokeColor=#c0392b;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="2100" y="55" width="230" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- IAM users label -->
+        <mxCell id="iam_users" value="IAM: kk-terraform-ci (Terraform)&#xa;IAM: gitlab-ci-apps-for-deploy (ECR+ECS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2070" y="130" width="290" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow: Internet → Route53 -->
+        <mxCell id="arr_int_r53" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" source="internet" target="route53" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             AWS REGION CONTAINER
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="aws_region" value="AWS — us-east-1" style="swimlane;startSize=35;fontStyle=1;fontSize=16;fillColor=#232F3E;fontColor=#FF9900;strokeColor=#FF9900;strokeWidth=3;rounded=1;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="10" y="170" width="2050" height="1505" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             BOOTSTRAP (local state — applied first)
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="bootstrap_box" value="[Stack 0] Bootstrap — Local Terraform State" style="swimlane;startSize=28;fontStyle=1;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="215" width="580" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s3_state" value="S3 Bucket&#xa;kriolu-kloud-terraform-tfstates&#xa;(versioned + encrypted)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="50" y="258" width="250" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dynamo_locks" value="DynamoDB Lock Tables ×4&#xa;network / cluster / apps / apps2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="320" y="258" width="270" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             VPC CONTAINER
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="vpc_box" value="[Stack 1] VPC — 10.220.0.0/16   (kriolu-kloud-vpc)" style="swimlane;startSize=30;fontStyle=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="345" width="1990" height="1310" as="geometry" />
+        </mxCell>
+
+        <!-- Network Resources row -->
+        <mxCell id="igw" value="Internet&#xa;Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="390" width="120" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="nat_gw" value="NAT Gateway&#xa;(single, cost-opt)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="195" y="390" width="150" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="acm" value="ACM *.kriolu-kloud.cv&#xa;(wildcard, DNS-validated)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="360" y="390" width="210" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sgs" value="Security Groups: alb-public · alb-private · services-private · data-private · ssh-private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="585" y="390" width="530" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             PUBLIC SUBNETS
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="pub_subnets" value="Public Subnets  (10.220.0.0/20 · /16 · /32 · /48  — 4 AZs)  ↔ Internet Gateway" style="swimlane;startSize=25;fontStyle=3;fontSize=11;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="465" width="1940" height="115" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_pub_prod" value="ALB Public — PROD&#xa;p-ecs-cluster-main-public&#xa;HTTPS :443 (internet-facing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7AA116;fontColor=#ffffff;strokeColor=#5a7b10;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="500" width="260" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="alb_pub_homolog" value="ALB Public — HOMOLOG&#xa;h-ecs-cluster-main-public&#xa;HTTPS :443 (internet-facing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7AA116;fontColor=#ffffff;strokeColor=#5a7b10;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="500" width="260" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             PRIVATE SUBNETS
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="priv_subnets" value="Private Subnets  (10.220.64.0/20 · /80 · /96 · /112  — 4 AZs)" style="swimlane;startSize=25;fontStyle=3;fontSize=11;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="598" width="1940" height="820" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             PROD CLUSTER  [Stack 2]
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="prod_cluster" value="[Stack 2] p-ecs-cluster-main  (PROD)" style="swimlane;startSize=28;fontStyle=1;fontSize=13;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="65" y="635" width="900" height="770" as="geometry" />
+        </mxCell>
+
+        <!-- Prod cluster internals -->
+        <mxCell id="prod_asg" value="Auto Scaling Group  |  EC2 t4g.small  |  arm64 Graviton  |  min:3  desired:3  max:10  |  AMI: SSM /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="85" y="678" width="860" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_alb_priv" value="ALB Private — PROD&#xa;p-ecs-cluster-main-private&#xa;HTTPS :443 + HTTP :80 (internal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7AA116;fontColor=#ffffff;strokeColor=#5a7b10;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="85" y="735" width="250" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_sd" value="Service Discovery&#xa;AWS Cloud Map&#xa;(private DNS namespace)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="350" y="735" width="200" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- PROD APP [Stack 3] -->
+        <mxCell id="prod_app" value="[Stack 3]  app — PROD" style="swimlane;startSize=25;fontStyle=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="815" width="400" height="570" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_dns" value="app.kriolu-kloud.cv  →  ALB Public&#xa;app-api.kriolu-kloud.cv  →  ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="90" y="850" width="380" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_svc_label" value="ECS Services (type: http)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="90" y="899" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_api" value="api&#xa;:4004" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_front" value="front&#xa;:80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="175" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_wkr_label" value="ECS Services (type: worker — no ALB)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="90" y="978" width="250" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_worker" value="worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_sched" value="scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="180" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_mgr" value="manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="270" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_ecr" value="ECR × 5 repos&#xa;p-app-api · front&#xa;worker · sched · mgr" style="shape=mxgraph.flowchart.stored_data;whiteSpace=wrap;html=1;fillColor=#3F8624;fontColor=#ffffff;strokeColor=#2d6319;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1055" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_iam" value="IAM Roles&#xa;task-execution-role&#xa;ecs-task-role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DD344C;fontColor=#ffffff;strokeColor=#b02a3c;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="265" y="1055" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_rds_ref" value="Aurora PostgreSQL 17.x&#xa;p-app-pg  (db.t4g.large)&#xa;↓ DB Subnets" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1140" width="195" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app_sg" value="SG per workload&#xa;(task security group)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="295" y="1140" width="165" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- PROD APP2 [Stack 3] -->
+        <mxCell id="prod_app2" value="[Stack 3]  app2 — PROD" style="swimlane;startSize=25;fontStyle=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="815" width="440" height="570" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_dns" value="app2.kriolu-kloud.cv  →  ALB Public&#xa;app2-api.kriolu-kloud.cv  →  ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="510" y="850" width="420" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_api" value="api&#xa;:4004" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_front" value="front&#xa;:80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="595" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_svc_label" value="ECS Services (type: http)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="510" y="899" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_wkr_label" value="ECS Services (type: worker)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="510" y="978" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_worker" value="worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_sched" value="scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_mgr" value="manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="690" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_ecr" value="ECR × 5 repos&#xa;p-app2-api · front&#xa;worker · sched · mgr" style="shape=mxgraph.flowchart.stored_data;whiteSpace=wrap;html=1;fillColor=#3F8624;fontColor=#ffffff;strokeColor=#2d6319;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1055" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_iam" value="IAM Roles&#xa;task-execution-role&#xa;ecs-task-role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DD344C;fontColor=#ffffff;strokeColor=#b02a3c;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="685" y="1055" width="145" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_rds_ref" value="Aurora PostgreSQL 17.x&#xa;p-app2-pg  (db.t4g.large)&#xa;↓ DB Subnets" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="510" y="1140" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prod_app2_sg" value="SG per workload&#xa;(task security group)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="720" y="1140" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             HOMOLOG CLUSTER  [Stack 2]
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="homolog_cluster" value="[Stack 2] h-ecs-cluster-main  (HOMOLOG)" style="swimlane;startSize=28;fontStyle=1;fontSize=13;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=3;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="635" width="900" height="770" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_asg" value="Auto Scaling Group  |  EC2 t4g.small  |  arm64 Graviton  |  min:3  desired:3  max:10  |  AMI: SSM /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="678" width="860" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_alb_priv" value="ALB Private — HOMOLOG&#xa;h-ecs-cluster-main-private&#xa;HTTPS :443 + HTTP :80 (internal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7AA116;fontColor=#ffffff;strokeColor=#5a7b10;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="735" width="250" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_sd" value="Service Discovery&#xa;AWS Cloud Map&#xa;(private DNS namespace)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1315" y="735" width="200" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- HOMOLOG APP [Stack 3] -->
+        <mxCell id="hom_app" value="[Stack 3]  app — HOMOLOG" style="swimlane;startSize=25;fontStyle=1;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1045" y="815" width="400" height="570" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_dns" value="app-h.kriolu-kloud.cv  →  ALB Public&#xa;app-api-h.kriolu-kloud.cv  →  ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="850" width="380" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_svc_label" value="ECS Services (type: http)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="899" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_api" value="api&#xa;:4004" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_front" value="front&#xa;:80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_wkr_label" value="ECS Services (type: worker)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="978" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_worker" value="worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_sched" value="scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_mgr" value="manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1235" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_ecr" value="ECR × 5 repos&#xa;h-app-api · front&#xa;worker · sched · mgr" style="shape=mxgraph.flowchart.stored_data;whiteSpace=wrap;html=1;fillColor=#3F8624;fontColor=#ffffff;strokeColor=#2d6319;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="1055" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_iam" value="IAM Roles&#xa;task-execution-role&#xa;ecs-task-role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DD344C;fontColor=#ffffff;strokeColor=#b02a3c;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="1055" width="145" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_rds_ref" value="Aurora PostgreSQL 17.x&#xa;h-app-pg  (db.t4g.large)&#xa;↓ DB Subnets" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="1140" width="195" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app_sg" value="SG per workload&#xa;(task security group)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="1140" width="165" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- HOMOLOG APP2 [Stack 3] -->
+        <mxCell id="hom_app2" value="[Stack 3]  app2 — HOMOLOG" style="swimlane;startSize=25;fontStyle=1;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1465" y="815" width="440" height="570" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_dns" value="app2-h.kriolu-kloud.cv  →  ALB Public&#xa;app2-api-h.kriolu-kloud.cv  →  ALB Private" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="850" width="420" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_svc_label" value="ECS Services (type: http)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="899" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_api" value="api&#xa;:4004" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_front" value="front&#xa;:80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E7157B;fontColor=#ffffff;strokeColor=#c41162;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="924" width="75" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_wkr_label" value="ECS Services (type: worker)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontStyle=3;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="978" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_worker" value="worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_sched" value="scheduler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_mgr" value="manager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#525252;fontColor=#ffffff;strokeColor=#333333;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1655" y="1003" width="80" height="38" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_ecr" value="ECR × 5 repos&#xa;h-app2-api · front&#xa;worker · sched · mgr" style="shape=mxgraph.flowchart.stored_data;whiteSpace=wrap;html=1;fillColor=#3F8624;fontColor=#ffffff;strokeColor=#2d6319;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="1055" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_iam" value="IAM Roles&#xa;task-execution-role&#xa;ecs-task-role" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DD344C;fontColor=#ffffff;strokeColor=#b02a3c;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1650" y="1055" width="145" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_rds_ref" value="Aurora PostgreSQL 17.x&#xa;h-app2-pg  (db.t4g.large)&#xa;↓ DB Subnets" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1475" y="1140" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hom_app2_sg" value="SG per workload&#xa;(task security group)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1685" y="1140" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             DATABASE SUBNETS (isolated — no IGW/NAT route)
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="db_subnets" value="Database Subnets  (10.220.128.0/20 · /144 · /160 · /176  — isolated, no internet/NAT route)" style="swimlane;startSize=25;fontStyle=3;fontSize=11;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1440" width="1940" height="190" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rds_prod_app" value="Aurora PostgreSQL 17.x&#xa;Cluster: p-app-pg&#xa;Instance: p-app-pg-db&#xa;db.t4g.large  |  Graviton&#xa;engine: aurora-postgresql" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="90" y="1475" width="195" height="135" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rds_prod_app2" value="Aurora PostgreSQL 17.x&#xa;Cluster: p-app2-pg&#xa;Instance: p-app2-pg-db&#xa;db.t4g.large  |  Graviton&#xa;engine: aurora-postgresql" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="320" y="1475" width="195" height="135" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rds_hom_app" value="Aurora PostgreSQL 17.x&#xa;Cluster: h-app-pg&#xa;Instance: h-app-pg-db&#xa;db.t4g.large  |  Graviton&#xa;engine: aurora-postgresql" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="1475" width="195" height="135" as="geometry" />
+        </mxCell>
+
+        <mxCell id="rds_hom_app2" value="Aurora PostgreSQL 17.x&#xa;Cluster: h-app2-pg&#xa;Instance: h-app2-pg-db&#xa;db.t4g.large  |  Graviton&#xa;engine: aurora-postgresql" style="shape=mxgraph.flowchart.database;whiteSpace=wrap;html=1;fillColor=#C7131F;fontColor=#ffffff;strokeColor=#9a0f19;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="1475" width="195" height="135" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TERRAFORM STACKS LEGEND (bottom of VPC)
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="tf_legend" value="Terraform Apply Order:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1645" width="220" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf1" value="① bootstrap/&#xa;S3 + DynamoDB&#xa;(local state)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1670" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf1_arr" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;strokeWidth=2;endArrow=block;endFill=1;" edge="1" source="tf1" target="tf2" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf2" value="② network/&#xa;VPC + Subnets + IGW&#xa;NAT GW + ACM + SGs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="265" y="1670" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf2_arr" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;strokeWidth=2;endArrow=block;endFill=1;" edge="1" source="tf2" target="tf3" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf3" value="③ cluster/&#xa;ECS Cluster + ALBs&#xa;ASG + Service Discovery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1670" width="210" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf3_arr" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;strokeWidth=2;endArrow=block;endFill=1;" edge="1" source="tf3" target="tf4" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf4" value="④ apps/  (×4 environments)&#xa;ECR + ECS Services&#xa;Aurora RDS + Route53" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="785" y="1670" width="240" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tf_destroy_note" value="Destroy order: ④ → ③ → ② → ① (reverse)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontStyle=2;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1085" y="1685" width="400" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TRAFFIC FLOW ARROWS
+             ═══════════════════════════════════════════════════════════ -->
+
+        <!-- Route53 → ALB Public Prod -->
+        <mxCell id="arr_r53_alb_pub_prod" value="A alias&#xa;app.kriolu-kloud.cv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d6b656;strokeWidth=2;fontSize=9;fontStyle=2;endArrow=block;endFill=1;" edge="1" source="route53" target="alb_pub_prod" parent="1">
+          <mxCell as="geometry"><Array as="points"><mxPoint x="375" y="100" /><mxPoint x="330" y="100" /><mxPoint x="330" y="540" /></Array></mxCell>
+        </mxCell>
+
+        <!-- Route53 → ALB Public Homolog -->
+        <mxCell id="arr_r53_alb_pub_hom" value="A alias&#xa;app-h.kriolu-kloud.cv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#9673a6;strokeWidth=2;fontSize=9;fontStyle=2;endArrow=block;endFill=1;" edge="1" source="route53" target="alb_pub_homolog" parent="1">
+          <mxCell as="geometry"><Array as="points"><mxPoint x="375" y="100" /><mxPoint x="1630" y="100" /><mxPoint x="1630" y="540" /></Array></mxCell>
+        </mxCell>
+
+        <!-- ALB Public Prod → front ECS -->
+        <mxCell id="arr_alb_pub_front" value="HTTPS:443&#xa;listener rule → TG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=2;fontSize=9;endArrow=block;endFill=1;" edge="1" source="alb_pub_prod" target="prod_app_front" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ALB Private Prod → api ECS -->
+        <mxCell id="arr_alb_priv_api" value="HTTPS:443 / HTTP:80&#xa;listener rule → TG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=2;fontSize=9;endArrow=block;endFill=1;" edge="1" source="prod_alb_priv" target="prod_app_api" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ALB Public Homolog → front ECS -->
+        <mxCell id="arr_alb_pub_hom_front" value="HTTPS:443&#xa;listener rule → TG" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=2;fontSize=9;endArrow=block;endFill=1;" edge="1" source="alb_pub_homolog" target="hom_app_front" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ALB Private Homolog → api ECS -->
+        <mxCell id="arr_alb_priv_hom_api" value="HTTPS:443 / HTTP:80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#7AA116;strokeWidth=2;fontSize=9;endArrow=block;endFill=1;" edge="1" source="hom_alb_priv" target="hom_app_api" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ECS api → Aurora (prod) -->
+        <mxCell id="arr_api_rds_prod" value="TCP :5432" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#C7131F;strokeWidth=1;fontSize=9;dashed=1;endArrow=block;endFill=1;" edge="1" source="prod_app_api" target="rds_prod_app" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ECS api → Aurora (prod app2) -->
+        <mxCell id="arr_api_rds_prod2" value="TCP :5432" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#C7131F;strokeWidth=1;fontSize=9;dashed=1;endArrow=block;endFill=1;" edge="1" source="prod_app2_api" target="rds_prod_app2" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ECS api → Aurora (homolog) -->
+        <mxCell id="arr_api_rds_hom" value="TCP :5432" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#C7131F;strokeWidth=1;fontSize=9;dashed=1;endArrow=block;endFill=1;" edge="1" source="hom_app_api" target="rds_hom_app" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ECS api → Aurora (homolog app2) -->
+        <mxCell id="arr_api_rds_hom2" value="TCP :5432" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#C7131F;strokeWidth=1;fontSize=9;dashed=1;endArrow=block;endFill=1;" edge="1" source="hom_app2_api" target="rds_hom_app2" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- GitLab → ECR push -->
+        <mxCell id="arr_gitlab_ecr" value="docker push (arm64)&#xa;aws ecr get-login-password" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E24329;strokeWidth=2;fontSize=9;fontStyle=2;dashed=1;endArrow=block;endFill=1;" edge="1" source="gitlab" target="prod_app_ecr" parent="1">
+          <mxCell as="geometry"><Array as="points"><mxPoint x="2100" y="500" /><mxPoint x="250" y="500" /></Array></mxCell>
+        </mxCell>
+
+        <!-- GitLab → ECS update service -->
+        <mxCell id="arr_gitlab_ecs" value="aws ecs update-service (rolling deploy)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E24329;strokeWidth=2;fontSize=9;fontStyle=2;dashed=1;endArrow=block;endFill=1;" edge="1" source="gitlab" target="prod_app_front" parent="1">
+          <mxCell as="geometry"><Array as="points"><mxPoint x="2200" y="400" /><mxPoint x="2200" y="970" /><mxPoint x="250" y="970" /></Array></mxCell>
+        </mxCell>
+
+        <!-- ECR → ECS task (image pull) -->
+        <mxCell id="arr_ecr_ecs" value="image pull (on task start)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#3F8624;strokeWidth=1;fontSize=9;dashed=1;endArrow=block;endFill=1;" edge="1" source="prod_app_ecr" target="prod_app_api" parent="1">
+          <mxCell as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             WORKLOAD MODULE NOTE
+             ═══════════════════════════════════════════════════════════ -->
+        <mxCell id="workload_note" value="Each app uses modules/ecs_ec2/workload/ — 1 module call per workload&#xa;type=&quot;http&quot; → ECR + SG + TG + Listener Rule + Task + Service + Autoscaling&#xa;type=&quot;worker&quot; → ECR + SG + Task + Service + Autoscaling (no ALB)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fffde7;strokeColor=#f9a825;fontSize=11;fontStyle=2;align=left;spacingLeft=8;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="1645" width="880" height="70" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

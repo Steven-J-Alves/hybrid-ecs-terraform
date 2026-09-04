@@ -1,0 +1,10 @@
+# package directories
+node_modules
+data/*
+.env
+.terraform*
+terraform/secrets.tfvars
+terraform/*.tfstate*
+terraform/.terraform*
+BKP*
+terraform/templates/*.env

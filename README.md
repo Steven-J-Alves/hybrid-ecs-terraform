@@ -15,7 +15,7 @@ See parent design at `.claude/topicos/hybrid-architecture/CONTEXTO.md` and diagr
 | 0 | `bootstrap/` | IAM foundations (adjusted for hybrid) |
 | 1 | `network/` | VPC `10.230.0.0/16`, subnets (public/private/DB), IGW, NAT, ACM |
 | 2 | `cluster/` | ECS Cluster `hybrid-apis`, ALB public + private, ASG (Graviton Spot t4g) |
-| 3 | `apps/` | ECS workloads `api-a` + `api-b` (task def, service EC2, workloads) |
+| 3 | `apps/` | Single `app` with 5 ECS workloads (api, front, worker, scheduler, manager) — deploys `test-apps/app` |
 | 4 | `data/` | **NEW stack** — RDS PostgreSQL t4g.small + ElastiCache Redis t4g.micro |
 
 Apply order: `bootstrap → network → cluster → data → apps`
@@ -41,14 +41,14 @@ Same S3 state bucket, disjoint keys + own DynamoDB locks:
 | IAM CI user | `kk-terraform-ci` | `kk-hybrid-terraform-ci` (to create) |
 | ECS cluster | `p-ecs-cluster-main` / `h-...` | `p-hybrid-apis` / `h-hybrid-apis` |
 | ALB names | `p-ecs-cluster-main-*` | `p-hybrid-apis-*` |
-| App names | `app`, `app2` | `api-a`, `api-b` |
+| App names | `app`, `app2` | `app` (single, same 5 workloads) |
 
 ## Environments
 
 | Environment | Cluster | App stack |
 |---|---|---|
-| prod | `p-hybrid-apis` | `p-hybrid-api-a-*`, `p-hybrid-api-b-*` |
-| homolog | `h-hybrid-apis` | `h-hybrid-api-a-*`, `h-hybrid-api-b-*` |
+| prod | `p-hybrid-apis` | `p-hybrid-app-{api,front,worker,scheduler,manager}` |
+| homolog | `h-hybrid-apis` | `h-hybrid-app-{api,front,worker,scheduler,manager}` |
 
 ## Modules
 

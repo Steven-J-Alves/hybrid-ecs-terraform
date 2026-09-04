@@ -110,7 +110,7 @@ variable "memory_target" {
   default     = 80
 }
 
-# Platform — passed from apps/api-a root module
+# Platform — passed from apps/app root module
 variable "cluster_id" {
   description = "ECS cluster ID"
   type        = string

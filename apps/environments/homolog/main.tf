@@ -10,7 +10,7 @@ terraform {
   backend "s3" {
     bucket         = "kriolu-kloud-terraform-tfstates"
     region         = "us-east-1"
-    key            = "hybrid-apps/homolog/kriolu-kloud-hybrid-api-b-us-east-1.tfstate"
+    key            = "hybrid-apps/homolog/kriolu-kloud-hybrid-app-us-east-1.tfstate"
     dynamodb_table = "kriolu-kloud-hybrid-apps-terraform-lock"
   }
 }
@@ -28,8 +28,8 @@ provider "aws" {
   }
 }
 
-module "homolog_api_b" {
-  source = "../../api-b"
+module "homolog_app" {
+  source = "../../app"
 
   aws_region = var.aws_region
 
@@ -42,7 +42,8 @@ module "homolog_api_b" {
   subnet_public_filter  = var.subnet_public_filter
   subnet_private_filter = var.subnet_private_filter
   iam_role_names        = var.iam_role_names
-  app2_host             = var.app2_host
-  app2_api_host         = var.app2_api_host
+  app_host              = var.app_host
+  app_api_host          = var.app_api_host
   rds_db_password       = var.rds_db_password
 }
+

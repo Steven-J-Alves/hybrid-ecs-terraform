@@ -5,10 +5,13 @@ locals {
   full_name    = "${var.app_name}-${var.name}"
 }
 
-# ECR repository — one per workload, named after the workload
+# ECR repository — one per workload, named after the workload.
+# Pushes nginx:alpine as :latest placeholder so ECS service can arrive at
+# steady state on first apply (before CI pushes the real image).
 module "ecr" {
-  source = "../../ecr"
-  name   = local.full_name
+  source     = "../../ecr"
+  name       = local.full_name
+  aws_region = var.aws_region
 }
 
 # Security group — HTTP workloads get ingress on var.port; workers get port 0 (all TCP from allowed CIDRs)

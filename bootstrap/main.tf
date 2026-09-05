@@ -82,23 +82,41 @@ resource "aws_iam_user" "ci" {
   }
 }
 
-# Per-stack inline policies (JSON files in iam/)
-resource "aws_iam_user_policy" "network" {
-  name   = "kk-hybrid-terraform-network-policy"
-  user   = aws_iam_user.ci.name
-  policy = file("${path.module}/iam/network-policy.json")
+# Per-stack MANAGED policies (JSON files in iam/).
+# Inline user policies have 2048-byte limit; managed policies have 6144 bytes,
+# and IAM parses the pretty JSON. We use jsonencode(jsondecode(...)) to compact
+# whitespace and stay well under the limit.
+resource "aws_iam_policy" "network" {
+  name        = "kk-hybrid-terraform-network-policy"
+  description = "Terraform apply for hybrid-ecs-terraform/network stack"
+  policy      = jsonencode(jsondecode(file("${path.module}/iam/network-policy.json")))
 }
 
-resource "aws_iam_user_policy" "cluster" {
-  name   = "kk-hybrid-terraform-cluster-policy"
-  user   = aws_iam_user.ci.name
-  policy = file("${path.module}/iam/cluster-policy.json")
+resource "aws_iam_policy" "cluster" {
+  name        = "kk-hybrid-terraform-cluster-policy"
+  description = "Terraform apply for hybrid-ecs-terraform/cluster stack"
+  policy      = jsonencode(jsondecode(file("${path.module}/iam/cluster-policy.json")))
 }
 
-resource "aws_iam_user_policy" "apps" {
-  name   = "kk-hybrid-terraform-apps-policy"
-  user   = aws_iam_user.ci.name
-  policy = file("${path.module}/iam/apps-policy.json")
+resource "aws_iam_policy" "apps" {
+  name        = "kk-hybrid-terraform-apps-policy"
+  description = "Terraform apply for hybrid-ecs-terraform/apps stack"
+  policy      = jsonencode(jsondecode(file("${path.module}/iam/apps-policy.json")))
+}
+
+resource "aws_iam_user_policy_attachment" "network" {
+  user       = aws_iam_user.ci.name
+  policy_arn = aws_iam_policy.network.arn
+}
+
+resource "aws_iam_user_policy_attachment" "cluster" {
+  user       = aws_iam_user.ci.name
+  policy_arn = aws_iam_policy.cluster.arn
+}
+
+resource "aws_iam_user_policy_attachment" "apps" {
+  user       = aws_iam_user.ci.name
+  policy_arn = aws_iam_policy.apps.arn
 }
 
 # State backend permissions — needed by every stack for init/plan/apply

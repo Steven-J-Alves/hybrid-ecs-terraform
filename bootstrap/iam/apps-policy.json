@@ -253,7 +253,7 @@
         "dynamodb:DeleteItem",
         "dynamodb:DescribeTable"
       ],
-      "Resource": "arn:aws:dynamodb:us-east-1:<ACCOUNT_ID>:table/kriolu-kloud-*-terraform-lock"
+      "Resource": "arn:aws:dynamodb:us-east-1:598552768939:table/kriolu-kloud-*-terraform-lock"
     },
     {
       "Sid": "TerraformStateReadCluster",

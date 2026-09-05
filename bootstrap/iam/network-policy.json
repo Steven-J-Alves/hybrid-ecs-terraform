@@ -49,7 +49,7 @@
         "dynamodb:DeleteItem",
         "dynamodb:DescribeTable"
       ],
-      "Resource": "arn:aws:dynamodb:us-east-1:<ACCOUNT_ID>:table/kriolu-kloud-network-terraform-lock"
+      "Resource": "arn:aws:dynamodb:us-east-1:598552768939:table/kriolu-kloud-hybrid-network-terraform-lock"
     },
     {
       "Sid": "RDSSubnetGroup",

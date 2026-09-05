@@ -216,7 +216,7 @@
         "dynamodb:DeleteItem",
         "dynamodb:DescribeTable"
       ],
-      "Resource": "arn:aws:dynamodb:us-east-1:<ACCOUNT_ID>:table/kriolu-kloud-cluster-terraform-lock"
+      "Resource": "arn:aws:dynamodb:us-east-1:598552768939:table/kriolu-kloud-hybrid-cluster-terraform-lock"
     },
     {
       "Sid": "SSMParameterReadECSAMI",

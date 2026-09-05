@@ -10,9 +10,9 @@ variable "aws_region" {
 }
 
 variable "push_placeholder" {
-  description = "Push nginx:alpine as :latest right after ECR creation so ECS services can start before CI has pushed real images. Requires docker + aws CLI on the runner (vps-native-runner has both)."
+  description = "Push nginx:alpine as :latest right after ECR creation. Requires docker + aws CLI on the runner. Set FALSE when terraform runs in the hashicorp/terraform container (no docker inside). Post-apply, run scripts/push-placeholders.sh."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "placeholder_image" {

@@ -5,9 +5,9 @@ module "ecs_cluster_ec2" {
   security_groups = [var.sg_ssh.id]
   vpc_zone_identifier = var.data_private_subnets.ids
   tags = var.tags
-  max_size = 10
-  desired_capacity = 3
-  min_size = 3
+  max_size         = 10
+  desired_capacity = 1
+  min_size         = 1
   node_role_name_prefix = "${var.base_name}-node-role"
   associate_public_ip = false
 

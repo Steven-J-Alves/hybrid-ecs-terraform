@@ -98,15 +98,42 @@ module "target_group_public" {
   health_check_matcher             = var.health_check_matcher
 }
 
-# Listener rule on the public ALB — priority null = AWS auto-assigns (R3)
+# Listener rule on the public ALB — priority null = AWS auto-assigns (R3).
+# If var.vps_target_group_arn is set → weighted forward (AWS TG + VPS TG).
+# Else → simple forward to AWS TG only (backwards compatible).
+locals {
+  weighted_split = local.is_public && var.vps_target_group_arn != ""
+}
+
 resource "aws_alb_listener_rule" "rule_public" {
   count        = local.is_public ? 1 : 0
   listener_arn = var.public_listener_arn
   priority     = null
 
   action {
-    type             = "forward"
-    target_group_arn = module.target_group_public[0].arn_tg
+    type = "forward"
+
+    # Weighted mode: 2 TGs (AWS + VPS)
+    dynamic "forward" {
+      for_each = local.weighted_split ? [1] : []
+      content {
+        target_group {
+          arn    = module.target_group_public[0].arn_tg
+          weight = var.aws_weight
+        }
+        target_group {
+          arn    = var.vps_target_group_arn
+          weight = var.vps_weight
+        }
+        stickiness {
+          enabled  = false
+          duration = 1
+        }
+      }
+    }
+
+    # Simple mode: single TG (default, backwards compatible)
+    target_group_arn = local.weighted_split ? null : module.target_group_public[0].arn_tg
   }
 
   condition {

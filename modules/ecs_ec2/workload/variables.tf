@@ -79,6 +79,25 @@ variable "public_host_header" {
   default     = ""
 }
 
+# Weighted split VPS ↔ AWS (public listener rule only)
+variable "vps_target_group_arn" {
+  description = "Optional TG ARN for the VPS side (ECS Anywhere via Tailscale IP). When set, the public listener rule uses weighted forward between the AWS TG (this workload) and the VPS TG."
+  type        = string
+  default     = ""
+}
+
+variable "aws_weight" {
+  description = "Weight assigned to the AWS-side target group in the weighted forward (default 100 = all AWS)"
+  type        = number
+  default     = 100
+}
+
+variable "vps_weight" {
+  description = "Weight assigned to the VPS-side target group. Cap at 30% — VPS does not autoscale."
+  type        = number
+  default     = 0
+}
+
 # Scaling
 variable "desired_count" {
   description = "Initial ECS desired task count"

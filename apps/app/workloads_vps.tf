@@ -38,6 +38,54 @@ data "aws_ecr_repository" "manager" {
 }
 
 # ---------------------------------------------------------------------------
+# TG-vps for front — the public ALB weighted-forwards X% here.
+# target_type = ip, target = VPS Tailscale IP. Public ALB reaches it via the
+# CGNAT route (100.64.0.0/10) installed by hybrid-networking-terraform/tailscale-gw
+# in all VPC route tables (public + private + db).
+# Health check hits Traefik root → 200 (nginx placeholder) or wherever front lands.
+# ---------------------------------------------------------------------------
+
+variable "vps_tailscale_ip" {
+  description = "Tailscale IP of the VPS acting as the second ALB target"
+  type        = string
+  default     = "100.73.87.120"
+}
+
+variable "vps_front_traffic_weight" {
+  description = "Weight assigned to the VPS side in the public ALB weighted forward (0-100). Cap at 30 — VPS does not autoscale."
+  type        = number
+  default     = 20
+}
+
+resource "aws_lb_target_group" "front_vps" {
+  name        = "${local.base_name}-front-vps"
+  vpc_id      = data.aws_vpc.crawler_vpc.id
+  target_type = "ip"
+  port        = 80
+  protocol    = "HTTP"
+
+  # Traefik on the VPS returns 404 on GET / without a Host header (no default
+  # router); accept 200-499 as healthy — Traefik being alive at all is enough.
+  # For per-route health, wire dedicated healthchecks inside Traefik labels.
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 15
+    matcher             = "200-499"
+  }
+}
+
+resource "aws_lb_target_group_attachment" "front_vps" {
+  target_group_arn  = aws_lb_target_group.front_vps.arn
+  target_id         = var.vps_tailscale_ip
+  port              = 80
+  availability_zone = "all"   # ALB target_type=ip with off-VPC IP needs "all"
+}
+
+# ---------------------------------------------------------------------------
 # extraHosts — inter-API calls resolve to Traefik on the host bridge gateway.
 #
 # ECS RegisterTaskDefinition requires a real IPv4 (does NOT accept the

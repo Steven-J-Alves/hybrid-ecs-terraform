@@ -71,6 +71,12 @@ module "workload_front" {
   task_role_arn        = module.ecs_role.arn_role_ecs_task_role
   aws_region           = var.aws_region
 
+  # Weighted split — X% of app.kriolu-kloud.cv traffic routes to VPS via Tailscale.
+  # TG is defined in workloads_vps.tf (aws_lb_target_group.front_vps).
+  vps_target_group_arn = aws_lb_target_group.front_vps.arn
+  aws_weight           = 100 - var.vps_front_traffic_weight
+  vps_weight           = var.vps_front_traffic_weight
+
   environment_vars = {
     API_URL = "http://${var.app_api_host}"
   }

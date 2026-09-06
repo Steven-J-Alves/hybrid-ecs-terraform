@@ -1,0 +1,80 @@
+# data stack CI — RDS Postgres + ElastiCache Redis. Prod only for now.
+# Requires TF_VAR_rds_db_password (protected+masked, sensitive).
+
+.data_base:
+  extends: .tf_base
+  cache:
+    key: hybrid-data-prod
+    paths: [ "data/environments/prod/.terraform/" ]
+    policy: pull-push
+
+data:prod:validate:
+  extends: .data_base
+  stage: validate
+  variables:
+    DATA_TF_WORKDIR: data/environments/prod
+  script:
+    - terraform -chdir=$DATA_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$DATA_TF_WORKDIR validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "data/**/*", "modules/rds/**/*", "modules/elasticache/**/*", "modules/postgres/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "data/**/*", "modules/rds/**/*", "modules/elasticache/**/*", "modules/postgres/**/*" ]
+
+data:prod:plan:
+  extends: .data_base
+  stage: plan
+  variables:
+    DATA_TF_WORKDIR: data/environments/prod
+  resource_group: hybrid-data-prod
+  script:
+    - terraform -chdir=$DATA_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$DATA_TF_WORKDIR plan -input=false -out=tfplan
+  artifacts:
+    paths: [ "data/environments/prod/tfplan" ]
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "data/**/*", "modules/rds/**/*", "modules/elasticache/**/*", "modules/postgres/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "data/**/*", "modules/rds/**/*", "modules/elasticache/**/*", "modules/postgres/**/*" ]
+  needs: [ data:prod:validate ]
+
+data:prod:apply:
+  extends: .data_base
+  stage: apply
+  variables:
+    DATA_TF_WORKDIR: data/environments/prod
+  resource_group: hybrid-data-prod
+  environment:
+    name: hybrid-prod
+    action: start
+  script:
+    - terraform -chdir=$DATA_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$DATA_TF_WORKDIR apply -input=false tfplan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  needs: [ data:prod:plan ]
+
+data:prod:destroy:
+  extends: .data_base
+  stage: destroy
+  variables:
+    DATA_TF_WORKDIR: data/environments/prod
+  resource_group: hybrid-data-prod
+  environment:
+    name: hybrid-prod
+    action: stop
+  before_script:
+    - export TF_IN_AUTOMATION=1 TF_INPUT=0
+    - echo "⚠ DESTROY WARNING — This wipes the RDS instance. Snapshot first via console/CLI."
+  script:
+    - terraform -chdir=$DATA_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$DATA_TF_WORKDIR destroy -input=false -auto-approve
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true

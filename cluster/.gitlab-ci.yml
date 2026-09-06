@@ -1,163 +1,156 @@
-# Apply order: network → cluster → apps
-# Branches: main → prod | homolog → homolog
-# Both environments share the same network stack (prod VPC).
+# cluster stack CI — ECS cluster + ALBs + ASG capacity provider.
+# Applies to hybrid-ecs-terraform. Repo mounted at $CI_PROJECT_DIR.
+# TF workdir uses relative sources (../../modules) — must mount entire repo.
 
-stages:
-  - validate
-  - plan
-  - apply
-  - destroy
+.cluster_base:
+  extends: .tf_base
+  cache:
+    key: "hybrid-cluster-${CI_JOB_STAGE}"
+    paths: [ "cluster/environments/${CLUSTER_ENV_NAME}/.terraform/" ]
+    policy: pull-push
 
-# ── Job templates (hidden) ────────────────────────────────────────────────────
+# ─── prod (main branch) ───────────────────────────────────────────────────────
 
-.cluster_validate:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+cluster:prod:validate:
+  extends: .cluster_base
   stage: validate
+  variables:
+    CLUSTER_ENV_NAME: prod
+    CLUSTER_TF_WORKDIR: cluster/environments/prod
+  resource_group: hybrid-cluster-prod
   script:
     - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$CLUSTER_TF_WORKDIR validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "cluster/**/*", "modules/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "cluster/**/*", "modules/**/*" ]
 
-.cluster_plan:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+cluster:prod:plan:
+  extends: .cluster_base
   stage: plan
+  variables:
+    CLUSTER_ENV_NAME: prod
+    CLUSTER_TF_WORKDIR: cluster/environments/prod
+  resource_group: hybrid-cluster-prod
   script:
     - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$CLUSTER_TF_WORKDIR plan -input=false -out=tfplan
+  artifacts:
+    paths: [ "cluster/environments/prod/tfplan" ]
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "cluster/**/*", "modules/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "cluster/**/*", "modules/**/*" ]
+  needs: [ cluster:prod:validate ]
 
-.cluster_apply:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+cluster:prod:apply:
+  extends: .cluster_base
   stage: apply
+  variables:
+    CLUSTER_ENV_NAME: prod
+    CLUSTER_TF_WORKDIR: cluster/environments/prod
+  resource_group: hybrid-cluster-prod
+  environment:
+    name: hybrid-prod
+    action: start
   script:
     - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
-    - terraform -chdir=$CLUSTER_TF_WORKDIR apply -input=false -auto-approve
-  when: manual
-  allow_failure: false
+    - terraform -chdir=$CLUSTER_TF_WORKDIR apply -input=false tfplan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  needs: [ cluster:prod:plan ]
 
-.cluster_destroy:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+cluster:prod:destroy:
+  extends: .cluster_base
   stage: destroy
+  variables:
+    CLUSTER_ENV_NAME: prod
+    CLUSTER_TF_WORKDIR: cluster/environments/prod
+  resource_group: hybrid-cluster-prod
+  environment:
+    name: hybrid-prod
+    action: stop
   script:
     - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$CLUSTER_TF_WORKDIR destroy -input=false -auto-approve
-  when: manual
-  needs: []
-
-# ── PROD — main branch ────────────────────────────────────────────────────────
-
-cluster:validate:
-  extends: .cluster_validate
-  variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
 
-cluster:plan:
-  extends: .cluster_plan
-  variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
-  artifacts:
-    paths:
-      - cluster/environments/prod/tfplan
-    expire_in: 1 day
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-  needs:
-    - cluster:validate
-
-cluster:apply:
-  extends: .cluster_apply
-  variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-  needs:
-    - cluster:plan
-
-cluster:destroy:
-  extends: .cluster_destroy
-  variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-
-# ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
+# ─── homolog (homolog branch) ─────────────────────────────────────────────────
 
 cluster:homolog:validate:
-  extends: .cluster_validate
+  extends: .cluster_base
+  stage: validate
   variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+    CLUSTER_ENV_NAME: homolog
+    CLUSTER_TF_WORKDIR: cluster/environments/homolog
+  resource_group: hybrid-cluster-homolog
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR validate
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      changes: [ "cluster/**/*", "modules/**/*" ]
 
 cluster:homolog:plan:
-  extends: .cluster_plan
+  extends: .cluster_base
+  stage: plan
   variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+    CLUSTER_ENV_NAME: homolog
+    CLUSTER_TF_WORKDIR: cluster/environments/homolog
+  resource_group: hybrid-cluster-homolog
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR plan -input=false -out=tfplan
   artifacts:
-    paths:
-      - cluster/environments/homolog/tfplan
+    paths: [ "cluster/environments/homolog/tfplan" ]
     expire_in: 1 day
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-  needs:
-    - cluster:homolog:validate
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      changes: [ "cluster/**/*", "modules/**/*" ]
+  needs: [ cluster:homolog:validate ]
 
 cluster:homolog:apply:
-  extends: .cluster_apply
+  extends: .cluster_base
+  stage: apply
   variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+    CLUSTER_ENV_NAME: homolog
+    CLUSTER_TF_WORKDIR: cluster/environments/homolog
+  resource_group: hybrid-cluster-homolog
+  environment:
+    name: hybrid-homolog
+    action: start
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR apply -input=false tfplan
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-  needs:
-    - cluster:homolog:plan
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      when: manual
+      allow_failure: false
+  needs: [ cluster:homolog:plan ]
 
 cluster:homolog:destroy:
-  extends: .cluster_destroy
+  extends: .cluster_base
+  stage: destroy
   variables:
-    CLUSTER_TF_WORKDIR: "cluster/environments/homolog"
+    CLUSTER_ENV_NAME: homolog
+    CLUSTER_TF_WORKDIR: cluster/environments/homolog
+  resource_group: hybrid-cluster-homolog
+  environment:
+    name: hybrid-homolog
+    action: stop
+  script:
+    - terraform -chdir=$CLUSTER_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$CLUSTER_TF_WORKDIR destroy -input=false -auto-approve
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - cluster/**/*
-        - modules/**/*
-    - if: '$CI_COMMIT_BRANCH == "homolog" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      when: manual
+      allow_failure: true

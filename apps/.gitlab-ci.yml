@@ -1,157 +1,158 @@
-# Apply order: network → cluster → apps
-# Branches: main → prod | homolog → homolog
-# Single app (5 workloads: api, front, worker, scheduler, manager) — deploys test-apps/app
+# apps stack CI — 5 ECS workloads (api, front, worker, scheduler, manager)
+# Both launch types: EC2 (AWS) + EXTERNAL (VPS ECS Anywhere).
+# Requires TF_VAR_rds_db_password (currently 'unused' — Postgres commented out).
 
-stages:
-  - validate
-  - plan
-  - apply
-  - destroy
+.apps_base:
+  extends: .tf_base
+  cache:
+    key: "hybrid-apps-${APPS_ENV_NAME}"
+    paths: [ "apps/environments/${APPS_ENV_NAME}/.terraform/" ]
+    policy: pull-push
 
-# ── Job templates (hidden) ────────────────────────────────────────────────────
+# ─── prod (main branch) ───────────────────────────────────────────────────────
 
-.apps_validate:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+apps:prod:validate:
+  extends: .apps_base
   stage: validate
+  variables:
+    APPS_ENV_NAME: prod
+    APPS_TF_WORKDIR: apps/environments/prod
+  resource_group: hybrid-apps-prod
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$APPS_TF_WORKDIR validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "apps/**/*", "modules/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "apps/**/*", "modules/**/*" ]
 
-.apps_plan:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+apps:prod:plan:
+  extends: .apps_base
   stage: plan
+  variables:
+    APPS_ENV_NAME: prod
+    APPS_TF_WORKDIR: apps/environments/prod
+  resource_group: hybrid-apps-prod
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$APPS_TF_WORKDIR plan -input=false -out=tfplan
+  artifacts:
+    paths: [ "apps/environments/prod/tfplan" ]
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "apps/**/*", "modules/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "apps/**/*", "modules/**/*" ]
+  needs: [ apps:prod:validate ]
 
-.apps_apply:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+apps:prod:apply:
+  extends: .apps_base
   stage: apply
+  variables:
+    APPS_ENV_NAME: prod
+    APPS_TF_WORKDIR: apps/environments/prod
+  resource_group: hybrid-apps-prod
+  environment:
+    name: hybrid-prod
+    action: start
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
-    - terraform -chdir=$APPS_TF_WORKDIR apply -input=false -auto-approve
-  when: manual
-  allow_failure: false
+    - terraform -chdir=$APPS_TF_WORKDIR apply -input=false tfplan
+    - echo "→ Next step: push arm64 nginx placeholder to 5 ECRs so tasks reach steady state"
+    - echo "→ Run manually or wait for CI in test-apps repos: bash scripts/push-placeholders.sh p-app"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  needs: [ apps:prod:plan ]
 
-.apps_destroy:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+apps:prod:destroy:
+  extends: .apps_base
   stage: destroy
+  variables:
+    APPS_ENV_NAME: prod
+    APPS_TF_WORKDIR: apps/environments/prod
+  resource_group: hybrid-apps-prod
+  environment:
+    name: hybrid-prod
+    action: stop
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$APPS_TF_WORKDIR destroy -input=false -auto-approve
-  when: manual
-  needs: []
-
-# ── PROD — main branch ────────────────────────────────────────────────────────
-
-apps:validate:
-  extends: .apps_validate
-  variables:
-    APPS_TF_WORKDIR: "apps/environments/prod"
-    CLUSTER_STATE_ENV: "prod"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true
 
-apps:plan:
-  extends: .apps_plan
-  variables:
-    APPS_TF_WORKDIR: "apps/environments/prod"
-  artifacts:
-    paths:
-      - apps/environments/prod/tfplan
-    expire_in: 1 day
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
-  needs:
-    - apps:validate
-
-apps:apply:
-  extends: .apps_apply
-  variables:
-    APPS_TF_WORKDIR: "apps/environments/prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
-  needs:
-    - apps:plan
-
-apps:destroy:
-  extends: .apps_destroy
-  variables:
-    APPS_TF_WORKDIR: "apps/environments/prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
-
-# ── HOMOLOG — homolog branch ──────────────────────────────────────────────────
+# ─── homolog (homolog branch) ─────────────────────────────────────────────────
 
 apps:homolog:validate:
-  extends: .apps_validate
+  extends: .apps_base
+  stage: validate
   variables:
-    APPS_TF_WORKDIR: "apps/environments/homolog"
-    CLUSTER_STATE_ENV: "homolog"
+    APPS_ENV_NAME: homolog
+    APPS_TF_WORKDIR: apps/environments/homolog
+  resource_group: hybrid-apps-homolog
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR validate
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      changes: [ "apps/**/*", "modules/**/*" ]
 
 apps:homolog:plan:
-  extends: .apps_plan
+  extends: .apps_base
+  stage: plan
   variables:
-    APPS_TF_WORKDIR: "apps/environments/homolog"
+    APPS_ENV_NAME: homolog
+    APPS_TF_WORKDIR: apps/environments/homolog
+  resource_group: hybrid-apps-homolog
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR plan -input=false -out=tfplan
   artifacts:
-    paths:
-      - apps/environments/homolog/tfplan
+    paths: [ "apps/environments/homolog/tfplan" ]
     expire_in: 1 day
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
-  needs:
-    - apps:homolog:validate
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      changes: [ "apps/**/*", "modules/**/*" ]
+  needs: [ apps:homolog:validate ]
 
 apps:homolog:apply:
-  extends: .apps_apply
+  extends: .apps_base
+  stage: apply
   variables:
-    APPS_TF_WORKDIR: "apps/environments/homolog"
+    APPS_ENV_NAME: homolog
+    APPS_TF_WORKDIR: apps/environments/homolog
+  resource_group: hybrid-apps-homolog
+  environment:
+    name: hybrid-homolog
+    action: start
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR apply -input=false tfplan
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
-  needs:
-    - apps:homolog:plan
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      when: manual
+      allow_failure: false
+  needs: [ apps:homolog:plan ]
 
 apps:homolog:destroy:
-  extends: .apps_destroy
+  extends: .apps_base
+  stage: destroy
   variables:
-    APPS_TF_WORKDIR: "apps/environments/homolog"
+    APPS_ENV_NAME: homolog
+    APPS_TF_WORKDIR: apps/environments/homolog
+  resource_group: hybrid-apps-homolog
+  environment:
+    name: hybrid-homolog
+    action: stop
+  script:
+    - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
+    - terraform -chdir=$APPS_TF_WORKDIR destroy -input=false -auto-approve
   rules:
-    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - apps/**/*
-        - modules/**/*
+    - if: '$CI_COMMIT_BRANCH == "homolog"'
+      when: manual
+      allow_failure: true

@@ -1,4 +1,63 @@
+# hybrid-ecs-terraform · CI/CD root
+#
+# Design:
+#   - Per-stack pipelines (bootstrap, network, cluster, data, apps) included
+#     from each stack folder below.
+#   - Branch strategy: main = prod; homolog branch = homolog stacks; MRs → plan only.
+#   - Manual apply gated by environment `hybrid-prod` (approval).
+#   - Destroy is manual + only from main + gated by environment.
+#   - Runner: `vps-native-runner` (shell + docker). Tag: `vps`.
+#
+# Required CI variables (Settings → CI/CD → Variables, all protected+masked):
+#   AWS_ACCESS_KEY_ID       (from bootstrap output kk-hybrid-terraform-ci)
+#   AWS_SECRET_ACCESS_KEY   (sensitive)
+#   AWS_DEFAULT_REGION      = us-east-1
+#   TF_VAR_rds_db_password  (sensitive — only used by data stack)
+
 include:
+  - local: bootstrap/.gitlab-ci.yml
   - local: network/.gitlab-ci.yml
   - local: cluster/.gitlab-ci.yml
+  - local: data/.gitlab-ci.yml
   - local: apps/.gitlab-ci.yml
+
+stages:
+  - validate
+  - plan
+  - apply
+  - destroy
+
+# ─── Shared job template ──────────────────────────────────────────────────────
+# Every stack pipeline extends `.tf_base` for image + tags + common env.
+.tf_base:
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  tags: [vps]
+  before_script:
+    - export TF_IN_AUTOMATION=1
+    - export TF_INPUT=0
+
+# ─── Rule mixins ──────────────────────────────────────────────────────────────
+# Include with `rules: !reference [.rule_XXX, rules]` in child jobs.
+
+.rule_mr_plan_only:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "$STACK_DIR/**/*", "modules/**/*", "$CI_PROJECT_DIR/.gitlab-ci.yml" ]
+
+.rule_main_apply:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      changes: [ "$STACK_DIR/**/*", "modules/**/*" ]
+
+.rule_main_manual:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+
+.rule_homolog_apply:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "homolog" && $CI_PIPELINE_SOURCE == "push"'
+      changes: [ "$STACK_DIR/**/*", "modules/**/*" ]

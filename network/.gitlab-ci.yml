@@ -1,104 +1,69 @@
-# Apply order: network → cluster → apps
-# Network is prod-only (shared VPC). Only runs on main branch.
+# network stack CI — VPC + subnets + SGs + ACM cert. Prod-only (shared VPC).
 
-stages:
-  - validate
-  - plan
-  - apply
-  - destroy
+variables:
+  NETWORK_TF_WORKDIR: "network/environments/prod"
 
-# ── Job templates (hidden) ────────────────────────────────────────────────────
+.network_base:
+  extends: .tf_base
+  resource_group: hybrid-network-prod   # serialize apply/destroy
+  cache:
+    key: hybrid-network-prod
+    paths: [ "$NETWORK_TF_WORKDIR/.terraform/" ]
+    policy: pull-push
 
-.network_validate:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+network:validate:
+  extends: .network_base
   stage: validate
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$NETWORK_TF_WORKDIR validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "network/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "network/**/*" ]
 
-.network_plan:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+network:plan:
+  extends: .network_base
   stage: plan
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$NETWORK_TF_WORKDIR plan -input=false -out=tfplan
+  artifacts:
+    paths: [ "$NETWORK_TF_WORKDIR/tfplan" ]
+    expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "network/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "network/**/*" ]
+  needs: [ network:validate ]
 
-.network_apply:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+network:apply:
+  extends: .network_base
   stage: apply
+  environment:
+    name: hybrid-prod
+    action: start
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
-    - terraform -chdir=$NETWORK_TF_WORKDIR apply -input=false -auto-approve
-  when: manual
-  allow_failure: false
+    - terraform -chdir=$NETWORK_TF_WORKDIR apply -input=false tfplan
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  needs: [ network:plan ]
 
-.network_destroy:
-  image:
-    name: hashicorp/terraform:1.9
-    entrypoint: [""]
-  tags: [docker]
+network:destroy:
+  extends: .network_base
   stage: destroy
+  environment:
+    name: hybrid-prod
+    action: stop
   script:
     - terraform -chdir=$NETWORK_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$NETWORK_TF_WORKDIR destroy -input=false -auto-approve
-  when: manual
-  needs: []
-
-# ── PROD — main branch only ───────────────────────────────────────────────────
-
-network:validate:
-  extends: .network_validate
-  variables:
-    NETWORK_TF_WORKDIR: "network/environments/prod"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - network/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-
-network:plan:
-  extends: .network_plan
-  variables:
-    NETWORK_TF_WORKDIR: "network/environments/prod"
-  artifacts:
-    paths:
-      - network/environments/prod/tfplan
-    expire_in: 1 day
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - network/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-  needs:
-    - network:validate
-
-network:apply:
-  extends: .network_apply
-  variables:
-    NETWORK_TF_WORKDIR: "network/environments/prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - network/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
-  needs:
-    - network:plan
-
-network:destroy:
-  extends: .network_destroy
-  variables:
-    NETWORK_TF_WORKDIR: "network/environments/prod"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
-      changes:
-        - network/**/*
-    - if: '$CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api")'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true

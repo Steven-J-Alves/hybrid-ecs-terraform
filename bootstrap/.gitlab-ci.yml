@@ -1,0 +1,90 @@
+# bootstrap stack — CI (local state, applied ONCE, rarely changes).
+# Purpose: DynamoDB locks + IAM CI user (kk-hybrid-terraform-ci).
+#
+# IMPORTANT: bootstrap uses LOCAL state (backend { ... } is empty).
+# Runner shell keeps `bootstrap/terraform.tfstate` between runs — don't clean
+# the working directory (cache: paths does this).
+
+variables:
+  BOOTSTRAP_TF_WORKDIR: "bootstrap"
+
+# ─── Templates ────────────────────────────────────────────────────────────────
+.bootstrap_base:
+  extends: .tf_base
+  cache:
+    key: bootstrap-local-state
+    paths:
+      - $BOOTSTRAP_TF_WORKDIR/terraform.tfstate
+      - $BOOTSTRAP_TF_WORKDIR/terraform.tfstate.backup
+      - $BOOTSTRAP_TF_WORKDIR/.terraform/
+    policy: pull-push
+
+# ─── Jobs ─────────────────────────────────────────────────────────────────────
+
+bootstrap:validate:
+  extends: .bootstrap_base
+  stage: validate
+  script:
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR init -input=false
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR validate
+  variables:
+    STACK_DIR: bootstrap
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "bootstrap/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "bootstrap/**/*" ]
+
+bootstrap:plan:
+  extends: .bootstrap_base
+  stage: plan
+  script:
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR init -input=false
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR plan -input=false -out=tfplan
+  artifacts:
+    paths: [ "$BOOTSTRAP_TF_WORKDIR/tfplan" ]
+    expire_in: 1 day
+  variables:
+    STACK_DIR: bootstrap
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: [ "bootstrap/**/*" ]
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes: [ "bootstrap/**/*" ]
+  needs: [ bootstrap:validate ]
+
+bootstrap:apply:
+  extends: .bootstrap_base
+  stage: apply
+  environment:
+    name: hybrid-prod
+    action: prepare   # bootstrap not a "deployment", just prepare env
+  script:
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR init -input=false
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR apply -input=false tfplan
+    # Export access key ID to job log (for maintainer to copy to CI vars)
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR output -raw ci_access_key_id
+    - echo "⚠ Copy ci_access_key_id above + ci_secret_access_key (sensitive, use terraform output) to GitLab group CI variables"
+  when: manual
+  allow_failure: false
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+  needs: [ bootstrap:plan ]
+
+bootstrap:destroy:
+  extends: .bootstrap_base
+  stage: destroy
+  environment:
+    name: hybrid-prod
+    action: stop
+  script:
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR init -input=false
+    - terraform -chdir=$BOOTSTRAP_TF_WORKDIR destroy -input=false -auto-approve
+  when: manual
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: true

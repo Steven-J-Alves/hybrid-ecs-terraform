@@ -49,3 +49,30 @@ resource "aws_route53_record" "app_api_internal" {
     evaluate_target_health = false
   }
 }
+
+# Direct-to-VPS DNS: bypasses the AWS ALB entirely. Requests land on the VPS
+# public IPv4 (Contabo), served by Traefik on ports 80/443 with Let's Encrypt
+# certs (HTTP challenge). Same containers as the AWS-side path — just no ALB hop.
+variable "vps_public_ipv4" {
+  description = "Contabo VPS public IPv4 for direct-to-VPS DNS records."
+  type        = string
+  default     = "161.97.83.115"
+}
+
+resource "aws_route53_record" "direct_app" {
+  zone_id         = data.aws_route53_zone.public.zone_id
+  name            = "direct.${trimsuffix(data.aws_route53_zone.public.name, ".")}"
+  type            = "A"
+  ttl             = 60
+  records         = [var.vps_public_ipv4]
+  allow_overwrite = true
+}
+
+resource "aws_route53_record" "direct_api" {
+  zone_id         = data.aws_route53_zone.public.zone_id
+  name            = "direct-api.${trimsuffix(data.aws_route53_zone.public.name, ".")}"
+  type            = "A"
+  ttl             = 60
+  records         = [var.vps_public_ipv4]
+  allow_overwrite = true
+}

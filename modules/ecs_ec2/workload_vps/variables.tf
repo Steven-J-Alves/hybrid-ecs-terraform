@@ -98,6 +98,12 @@ variable "host_header" {
   default     = ""
 }
 
+variable "alt_host_headers" {
+  description = "Additional hostnames that also route to this workload (OR'd into the Traefik Host rule). Use for direct-to-VPS DNS names that bypass the AWS ALB."
+  type        = list(string)
+  default     = []
+}
+
 variable "traefik_entrypoint" {
   description = "Traefik entrypoint the router binds to (web = :80)"
   type        = string

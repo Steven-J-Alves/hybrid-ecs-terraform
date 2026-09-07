@@ -155,12 +155,13 @@ locals {
 module "workload_api_vps" {
   source = "../../modules/ecs_ec2/workload_vps"
 
-  app_name       = local.base_name
-  name           = "api"
-  type           = "http"
-  container_name = var.container_name["app_api"]
-  container_port = var.port_api_app
-  host_header    = var.app_api_host
+  app_name         = local.base_name
+  name             = "api"
+  type             = "http"
+  container_name   = var.container_name["app_api"]
+  container_port   = var.port_api_app
+  host_header      = var.app_api_host
+  alt_host_headers = ["direct-api.kriolu-kloud.cv"] # bypass AWS ALB
 
   cluster_id         = local.platform_cluster_id
   ecr_repository_url = data.aws_ecr_repository.api.repository_url
@@ -182,12 +183,13 @@ module "workload_api_vps" {
 module "workload_front_vps" {
   source = "../../modules/ecs_ec2/workload_vps"
 
-  app_name       = local.base_name
-  name           = "front"
-  type           = "http"
-  container_name = var.container_name["app_front"]
-  container_port = var.port_front_app
-  host_header    = var.app_host
+  app_name         = local.base_name
+  name             = "front"
+  type             = "http"
+  container_name   = var.container_name["app_front"]
+  container_port   = var.port_front_app
+  host_header      = var.app_host
+  alt_host_headers = ["direct.kriolu-kloud.cv"] # bypass AWS ALB
 
   cluster_id         = local.platform_cluster_id
   ecr_repository_url = data.aws_ecr_repository.front.repository_url

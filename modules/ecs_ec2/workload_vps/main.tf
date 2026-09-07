@@ -14,10 +14,15 @@ locals {
   is_http      = var.type == "http"
   router_alias = "${var.app_name}-${var.name}" # short alias for Traefik router/service names
 
+  # Traefik router rule: primary host_header + any alternates (Host(a) || Host(b) || ...)
+  # Enables direct DNS names (e.g. direct.kriolu-kloud.cv → VPS public IP, bypassing AWS ALB).
+  all_hosts   = concat([var.host_header], var.alt_host_headers)
+  router_rule = join(" || ", [for h in local.all_hosts : "Host(`${h}`)"])
+
   # Traefik dockerLabels — only for HTTP workloads with a host_header set
   traefik_labels = local.is_http && var.host_header != "" ? {
     "traefik.enable"                                                                = "true"
-    "traefik.http.routers.${local.router_alias}.rule"                               = "Host(`${var.host_header}`)"
+    "traefik.http.routers.${local.router_alias}.rule"                               = local.router_rule
     "traefik.http.routers.${local.router_alias}.entrypoints"                        = var.traefik_entrypoint
     "traefik.http.services.${local.router_alias}.loadbalancer.server.port"          = tostring(var.container_port)
     "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.path"     = "/health"

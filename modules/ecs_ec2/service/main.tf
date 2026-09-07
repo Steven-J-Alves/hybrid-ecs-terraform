@@ -47,7 +47,12 @@ resource "aws_ecs_service" "ecs_service" {
   }
 
   lifecycle {
-    ignore_changes = [desired_count, task_definition, load_balancer, deployment_maximum_percent, tags]
+    # load_balancer removed from ignore_changes: attaching a new TG (e.g. public
+    # ALB when workload becomes public, or adding VPS-side TG) must be applied
+    # by TF. AWS supports live TG attachment (no service recreation) since 2022.
+    # CI deploys only touch task_definition via --force-new-deployment, so they
+    # do not fight with this.
+    ignore_changes = [desired_count, task_definition, deployment_maximum_percent, tags]
   }
 
   propagate_tags = "SERVICE"

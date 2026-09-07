@@ -60,8 +60,8 @@ apps:prod:apply:
   script:
     - terraform -chdir=$APPS_TF_WORKDIR init -input=false -reconfigure
     - terraform -chdir=$APPS_TF_WORKDIR apply -input=false tfplan
-    - echo "→ Next step: push arm64 nginx placeholder to 5 ECRs so tasks reach steady state"
-    - echo "→ Run manually or wait for CI in test-apps repos: bash scripts/push-placeholders.sh p-app"
+    - 'echo "Next: push arm64 nginx placeholder to 5 ECRs so tasks reach steady state"'
+    - 'echo "Run manually or wait for CI in test-apps repos: bash scripts/push-placeholders.sh p-app"'
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: manual

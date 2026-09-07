@@ -28,6 +28,22 @@ resource "aws_route53_record" "app_api" {
   allow_overwrite = true
 
   alias {
+    name                   = local.public_alb_dns
+    zone_id                = local.alb_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# Split DNS: api-internal.kriolu-kloud.cv -> private ALB (internal callers via
+# VPN/Tailscale). Same TG (workload_api), different ingress point. Enables
+# service-to-service without going out to the internet.
+resource "aws_route53_record" "app_api_internal" {
+  zone_id         = data.aws_route53_zone.public.zone_id
+  name            = "api-internal.${trimsuffix(data.aws_route53_zone.public.name, ".")}"
+  type            = "A"
+  allow_overwrite = true
+
+  alias {
     name                   = local.private_alb_dns
     zone_id                = local.alb_zone_id
     evaluate_target_health = false

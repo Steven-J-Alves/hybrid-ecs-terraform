@@ -19,11 +19,25 @@ locals {
   all_hosts   = concat([var.host_header], var.alt_host_headers)
   router_rule = join(" || ", [for h in local.all_hosts : "Host(`${h}`)"])
 
-  # Traefik dockerLabels — only for HTTP workloads with a host_header set
+  # Traefik dockerLabels — HTTP workloads get 2 routers on the same service:
+  #   1. web (:80) — plain HTTP, used by AWS ALB TG-vps forwards and initial LE challenge
+  #   2. websecure (:443) — HTTPS with Let's Encrypt cert (auto-emitted via HTTP challenge
+  #      on first request; requires public DNS resolving to the VPS public IP, which is
+  #      the case for alt_host_headers like direct.kriolu-kloud.cv)
   traefik_labels = local.is_http && var.host_header != "" ? {
-    "traefik.enable"                                                                = "true"
-    "traefik.http.routers.${local.router_alias}.rule"                               = local.router_rule
-    "traefik.http.routers.${local.router_alias}.entrypoints"                        = var.traefik_entrypoint
+    "traefik.enable" = "true"
+
+    # HTTP router (port 80)
+    "traefik.http.routers.${local.router_alias}.rule"        = local.router_rule
+    "traefik.http.routers.${local.router_alias}.entrypoints" = var.traefik_entrypoint
+
+    # HTTPS router (port 443) — same rule, TLS with Let's Encrypt
+    "traefik.http.routers.${local.router_alias}-tls.rule"             = local.router_rule
+    "traefik.http.routers.${local.router_alias}-tls.entrypoints"      = "websecure"
+    "traefik.http.routers.${local.router_alias}-tls.tls"              = "true"
+    "traefik.http.routers.${local.router_alias}-tls.tls.certresolver" = "letsencrypt"
+
+    # Backend (shared by both routers)
     "traefik.http.services.${local.router_alias}.loadbalancer.server.port"          = tostring(var.container_port)
     "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.path"     = "/health"
     "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.interval" = "10s"

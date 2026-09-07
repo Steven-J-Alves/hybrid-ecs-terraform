@@ -15,9 +15,27 @@
         "ecs:DescribeCapacityProviders",
         "ecs:UpdateCapacityProvider",
         "ecs:PutClusterCapacityProviders",
+        "ecs:DeregisterContainerInstance",
+        "ecs:DescribeContainerInstances",
+        "ecs:ListContainerInstances",
         "ecs:TagResource",
         "ecs:UntagResource",
         "ecs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SSMActivation",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:CreateActivation",
+        "ssm:DeleteActivation",
+        "ssm:DescribeActivations",
+        "ssm:DescribeInstanceInformation",
+        "ssm:DeregisterManagedInstance",
+        "ssm:AddTagsToResource",
+        "ssm:RemoveTagsFromResource",
+        "ssm:ListTagsForResource"
       ],
       "Resource": "*"
     },

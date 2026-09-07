@@ -142,11 +142,11 @@ variable "container_name" {
   description = "Container name for each ECS service"
   type        = map(string)
   default = {
-    app_api        = "container-app-api"
-    app_worker     = "container-app-worker"
-    app_scheduler  = "container-app-scheduler"
-    app_manager    = "container-app-manager"
-    app_front      = "container-app-front"
+    app_api       = "container-app-api"
+    app_worker    = "container-app-worker"
+    app_scheduler = "container-app-scheduler"
+    app_manager   = "container-app-manager"
+    app_front     = "container-app-front"
   }
 }
 

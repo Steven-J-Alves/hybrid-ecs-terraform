@@ -84,8 +84,13 @@ module "workload_front" {
 
 # ------- Worker workloads — no ALB, no TG, no listener rule -------
 
+# worker/scheduler/manager depend on api being created first so ECS schedules
+# tasks in a sane order: API up first, then the consumers/orchestrator that
+# call it. Prevents rapid crash-loops during initial deploys.
 module "workload_worker" {
   source = "../../modules/ecs_ec2/workload"
+
+  depends_on = [module.workload_api]
 
   name           = "worker"
   app_name       = local.base_name
@@ -114,6 +119,8 @@ module "workload_worker" {
 module "workload_scheduler" {
   source = "../../modules/ecs_ec2/workload"
 
+  depends_on = [module.workload_api]
+
   name           = "scheduler"
   app_name       = local.base_name
   type           = "worker"
@@ -140,6 +147,8 @@ module "workload_scheduler" {
 
 module "workload_manager" {
   source = "../../modules/ecs_ec2/workload"
+
+  depends_on = [module.workload_api]
 
   name           = "manager"
   app_name       = local.base_name

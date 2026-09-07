@@ -36,9 +36,19 @@ module "workload_api" {
   allowed_cidrs             = local.platform_allowed_cidrs
   private_listener_arn      = local.platform_private_listener_arn
   private_http_listener_arn = local.platform_private_http_listener_arn
-  execution_role_arn        = module.ecs_role.arn_role
-  task_role_arn             = module.ecs_role.arn_role_ecs_task_role
-  aws_region                = var.aws_region
+  # Public listener for direct API access (external services hitting api.kriolu-kloud.cv)
+  public_listener_arn = local.platform_public_listener_arn
+  public_host_header  = var.app_api_host
+  execution_role_arn  = module.ecs_role.arn_role
+  task_role_arn       = module.ecs_role.arn_role_ecs_task_role
+  aws_region          = var.aws_region
+
+  # Weighted split — X% of api.kriolu-kloud.cv traffic goes to VPS via Tailscale.
+  # Applies to public 443 + private 443 + private 80 listener rules.
+  vps_target_group_arn         = aws_lb_target_group.vps["api-pub"].arn
+  vps_target_group_arn_private = aws_lb_target_group.vps["api-pvt"].arn
+  aws_weight                   = 100 - var.vps_api_traffic_weight
+  vps_weight                   = var.vps_api_traffic_weight
 }
 
 module "workload_front" {
@@ -73,8 +83,8 @@ module "workload_front" {
 
   # Weighted split — X% of app.kriolu-kloud.cv traffic routes to VPS via Tailscale.
   # Two TGs (one per ALB), same backend — AWS ELBv2 rejects one TG on multiple LBs.
-  vps_target_group_arn         = aws_lb_target_group.front_vps["pub"].arn
-  vps_target_group_arn_private = aws_lb_target_group.front_vps["pvt"].arn
+  vps_target_group_arn         = aws_lb_target_group.vps["front-pub"].arn
+  vps_target_group_arn_private = aws_lb_target_group.vps["front-pvt"].arn
   aws_weight                   = 100 - var.vps_front_traffic_weight
   vps_weight                   = var.vps_front_traffic_weight
 

@@ -52,21 +52,38 @@ variable "vps_tailscale_ip" {
 }
 
 variable "vps_front_traffic_weight" {
-  description = "Weight assigned to the VPS side in the public ALB weighted forward (0-100). Cap at 30 — VPS does not autoscale."
+  description = "Weight assigned to the VPS side in the front weighted forward (0-100). Cap at 30 — VPS does not autoscale."
   type        = number
   default     = 20
 }
 
-# One TG per ALB — AWS ELBv2 rejects the same TG on more than one LB
-# (TargetGroupAssociationLimit). Both TGs point to the same Tailscale IP:80
-# and use the same /ping health check.
-locals {
-  front_vps_tgs = toset(["pub", "pvt"])
+variable "vps_api_traffic_weight" {
+  description = "Weight assigned to the VPS side in the api weighted forward (0-100). Direct API access without going through the frontend."
+  type        = number
+  default     = 20
 }
 
-resource "aws_lb_target_group" "front_vps" {
-  for_each    = local.front_vps_tgs
-  name        = "${local.base_name}-front-vps-${each.key}"
+# One TG per ALB per workload — AWS ELBv2 rejects the same TG on more than
+# one LB (TargetGroupAssociationLimit). All TGs point to the same Tailscale
+# IP:80 (Traefik on VPS routes internally by Host header) and use the same
+# /ping health check.
+locals {
+  # workload -> set of ALB scopes each needs its own TG on
+  vps_tg_matrix = {
+    front = toset(["pub", "pvt"])
+    api   = toset(["pub", "pvt"])
+  }
+  # Flat set for for_each: [{workload, scope}]
+  vps_tg_set = merge([
+    for wl, scopes in local.vps_tg_matrix : {
+      for scope in scopes : "${wl}-${scope}" => { workload = wl, scope = scope }
+    }
+  ]...)
+}
+
+resource "aws_lb_target_group" "vps" {
+  for_each    = local.vps_tg_set
+  name        = "${local.base_name}-${each.value.workload}-vps-${each.value.scope}"
   vpc_id      = data.aws_vpc.crawler_vpc.id
   target_type = "ip"
   port        = 80
@@ -87,12 +104,32 @@ resource "aws_lb_target_group" "front_vps" {
   }
 }
 
-resource "aws_lb_target_group_attachment" "front_vps" {
-  for_each          = local.front_vps_tgs
-  target_group_arn  = aws_lb_target_group.front_vps[each.key].arn
+resource "aws_lb_target_group_attachment" "vps" {
+  for_each          = local.vps_tg_set
+  target_group_arn  = aws_lb_target_group.vps[each.key].arn
   target_id         = var.vps_tailscale_ip
   port              = 80
   availability_zone = "all" # ALB target_type=ip with off-VPC IP needs "all"
+}
+
+# Preserve existing TG state after rename front_vps -> vps (with workload prefix).
+# Without these blocks TF would destroy the old TGs and try to create new ones,
+# hitting AWS ResourceInUse (listener rule still references old ARN).
+moved {
+  from = aws_lb_target_group.front_vps["pub"]
+  to   = aws_lb_target_group.vps["front-pub"]
+}
+moved {
+  from = aws_lb_target_group.front_vps["pvt"]
+  to   = aws_lb_target_group.vps["front-pvt"]
+}
+moved {
+  from = aws_lb_target_group_attachment.front_vps["pub"]
+  to   = aws_lb_target_group_attachment.vps["front-pub"]
+}
+moved {
+  from = aws_lb_target_group_attachment.front_vps["pvt"]
+  to   = aws_lb_target_group_attachment.vps["front-pvt"]
 }
 
 # ---------------------------------------------------------------------------

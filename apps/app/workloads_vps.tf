@@ -57,8 +57,16 @@ variable "vps_front_traffic_weight" {
   default     = 20
 }
 
+# One TG per ALB — AWS ELBv2 rejects the same TG on more than one LB
+# (TargetGroupAssociationLimit). Both TGs point to the same Tailscale IP:80
+# and use the same /ping health check.
+locals {
+  front_vps_tgs = toset(["pub", "pvt"])
+}
+
 resource "aws_lb_target_group" "front_vps" {
-  name        = "${local.base_name}-front-vps"
+  for_each    = local.front_vps_tgs
+  name        = "${local.base_name}-front-vps-${each.key}"
   vpc_id      = data.aws_vpc.crawler_vpc.id
   target_type = "ip"
   port        = 80
@@ -80,7 +88,8 @@ resource "aws_lb_target_group" "front_vps" {
 }
 
 resource "aws_lb_target_group_attachment" "front_vps" {
-  target_group_arn  = aws_lb_target_group.front_vps.arn
+  for_each          = local.front_vps_tgs
+  target_group_arn  = aws_lb_target_group.front_vps[each.key].arn
   target_id         = var.vps_tailscale_ip
   port              = 80
   availability_zone = "all" # ALB target_type=ip with off-VPC IP needs "all"

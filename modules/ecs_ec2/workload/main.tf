@@ -43,12 +43,11 @@ module "target_group" {
   health_check_matcher             = var.health_check_matcher
 }
 
-# Weighted split for private listeners: enabled when var.vps_target_group_arn is
-# set. Same TG shared with the public listener — a single Traefik/target IP on
-# the VPS side, three rules (public 443, private 443, private 80) all pointing
-# to it. Ensures internal service-to-service calls can also reach the VPS.
+# Weighted split for private listeners: enabled when the PRIVATE VPS TG ARN is
+# set. AWS requires one TG per ALB, so the caller must supply a distinct TG
+# for the private side (same backend Tailscale IP:80 in practice).
 locals {
-  weighted_private = local.is_http && var.vps_target_group_arn != ""
+  weighted_private = local.is_http && var.vps_target_group_arn_private != ""
 }
 
 # Listener rule on the private ALB (HTTPS 443) — priority null = AWS auto-assigns (R3)
@@ -68,7 +67,7 @@ resource "aws_alb_listener_rule" "rule" {
           weight = var.aws_weight
         }
         target_group {
-          arn    = var.vps_target_group_arn
+          arn    = var.vps_target_group_arn_private
           weight = var.vps_weight
         }
         stickiness {
@@ -105,7 +104,7 @@ resource "aws_alb_listener_rule" "rule_http" {
           weight = var.aws_weight
         }
         target_group {
-          arn    = var.vps_target_group_arn
+          arn    = var.vps_target_group_arn_private
           weight = var.vps_weight
         }
         stickiness {

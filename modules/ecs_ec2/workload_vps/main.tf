@@ -12,17 +12,17 @@ locals {
   full_name    = "${var.app_name}-${var.name}-vps"
   log_group    = "/ecs/${local.full_name}"
   is_http      = var.type == "http"
-  router_alias = "${var.app_name}-${var.name}"   # short alias for Traefik router/service names
+  router_alias = "${var.app_name}-${var.name}" # short alias for Traefik router/service names
 
   # Traefik dockerLabels — only for HTTP workloads with a host_header set
   traefik_labels = local.is_http && var.host_header != "" ? {
-    "traefik.enable"                                                                        = "true"
-    "traefik.http.routers.${local.router_alias}.rule"                                       = "Host(`${var.host_header}`)"
-    "traefik.http.routers.${local.router_alias}.entrypoints"                                = var.traefik_entrypoint
-    "traefik.http.services.${local.router_alias}.loadbalancer.server.port"                  = tostring(var.container_port)
-    "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.path"             = "/health"
-    "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.interval"         = "10s"
-    "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.timeout"          = "3s"
+    "traefik.enable"                                                                = "true"
+    "traefik.http.routers.${local.router_alias}.rule"                               = "Host(`${var.host_header}`)"
+    "traefik.http.routers.${local.router_alias}.entrypoints"                        = var.traefik_entrypoint
+    "traefik.http.services.${local.router_alias}.loadbalancer.server.port"          = tostring(var.container_port)
+    "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.path"     = "/health"
+    "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.interval" = "10s"
+    "traefik.http.services.${local.router_alias}.loadbalancer.healthcheck.timeout"  = "3s"
   } : {}
 
   docker_labels = merge(local.traefik_labels, var.extra_docker_labels)

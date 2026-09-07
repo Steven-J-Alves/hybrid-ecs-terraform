@@ -79,9 +79,17 @@ variable "public_host_header" {
   default     = ""
 }
 
-# Weighted split VPS ↔ AWS (public listener rule only)
+# Weighted split VPS ↔ AWS.
+# Each ALB needs its own TG (AWS rejects same TG on multiple LBs), so pass one
+# ARN per listener that should split. Leave blank to disable split for that ALB.
 variable "vps_target_group_arn" {
-  description = "Optional TG ARN for the VPS side (ECS Anywhere via Tailscale IP). When set, the public listener rule uses weighted forward between the AWS TG (this workload) and the VPS TG."
+  description = "TG ARN for VPS side on the PUBLIC ALB. Same VPS backend, dedicated TG (AWS ELBv2: TargetGroupAssociationLimit)."
+  type        = string
+  default     = ""
+}
+
+variable "vps_target_group_arn_private" {
+  description = "TG ARN for VPS side on the PRIVATE ALB. Distinct from vps_target_group_arn."
   type        = string
   default     = ""
 }

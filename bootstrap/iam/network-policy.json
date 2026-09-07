@@ -52,6 +52,34 @@
       "Resource": "arn:aws:dynamodb:us-east-1:598552768939:table/kriolu-kloud-hybrid-network-terraform-lock"
     },
     {
+      "Sid": "ACM",
+      "Effect": "Allow",
+      "Action": [
+        "acm:RequestCertificate",
+        "acm:DeleteCertificate",
+        "acm:DescribeCertificate",
+        "acm:ListCertificates",
+        "acm:GetCertificate",
+        "acm:AddTagsToCertificate",
+        "acm:RemoveTagsFromCertificate",
+        "acm:ListTagsForCertificate",
+        "acm:UpdateCertificateOptions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "Route53DNSValidation",
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListHostedZones",
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets",
+        "route53:GetChange"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "RDSSubnetGroup",
       "Effect": "Allow",
       "Action": [

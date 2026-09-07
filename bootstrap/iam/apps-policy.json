@@ -2,12 +2,16 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ECR",
+      "Sid": "ECRAuthToken",
       "Effect": "Allow",
-      "Action": [
-        "ecr:*"
-      ],
+      "Action": ["ecr:GetAuthorizationToken"],
       "Resource": "*"
+    },
+    {
+      "Sid": "ECRAppRepos",
+      "Effect": "Allow",
+      "Action": ["ecr:*"],
+      "Resource": "arn:aws:ecr:us-east-1:598552768939:repository/p-app-*"
     },
     {
       "Sid": "ECSServices",

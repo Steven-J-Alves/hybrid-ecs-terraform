@@ -43,15 +43,42 @@ module "target_group" {
   health_check_matcher             = var.health_check_matcher
 }
 
-# Listener rule on the private ALB (HTTP only) — priority null = AWS auto-assigns (R3)
+# Weighted split for private listeners: enabled when var.vps_target_group_arn is
+# set. Same TG shared with the public listener — a single Traefik/target IP on
+# the VPS side, three rules (public 443, private 443, private 80) all pointing
+# to it. Ensures internal service-to-service calls can also reach the VPS.
+locals {
+  weighted_private = local.is_http && var.vps_target_group_arn != ""
+}
+
+# Listener rule on the private ALB (HTTPS 443) — priority null = AWS auto-assigns (R3)
 resource "aws_alb_listener_rule" "rule" {
   count        = local.is_http ? 1 : 0
   listener_arn = var.private_listener_arn
   priority     = var.alb_priority
 
   action {
-    type             = "forward"
-    target_group_arn = module.target_group[0].arn_tg
+    type = "forward"
+
+    dynamic "forward" {
+      for_each = local.weighted_private ? [1] : []
+      content {
+        target_group {
+          arn    = module.target_group[0].arn_tg
+          weight = var.aws_weight
+        }
+        target_group {
+          arn    = var.vps_target_group_arn
+          weight = var.vps_weight
+        }
+        stickiness {
+          enabled  = false
+          duration = 1
+        }
+      }
+    }
+
+    target_group_arn = local.weighted_private ? null : module.target_group[0].arn_tg
   }
 
   condition {
@@ -68,8 +95,27 @@ resource "aws_alb_listener_rule" "rule_http" {
   priority     = null
 
   action {
-    type             = "forward"
-    target_group_arn = module.target_group[0].arn_tg
+    type = "forward"
+
+    dynamic "forward" {
+      for_each = local.weighted_private ? [1] : []
+      content {
+        target_group {
+          arn    = module.target_group[0].arn_tg
+          weight = var.aws_weight
+        }
+        target_group {
+          arn    = var.vps_target_group_arn
+          weight = var.vps_weight
+        }
+        stickiness {
+          enabled  = false
+          duration = 1
+        }
+      }
+    }
+
+    target_group_arn = local.weighted_private ? null : module.target_group[0].arn_tg
   }
 
   condition {

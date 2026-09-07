@@ -6,6 +6,15 @@ resource "aws_ecs_service" "ecs_service" {
   launch_type                       = var.launch_type
   health_check_grace_period_seconds = var.health_check_grace_period_seconds
 
+  # Destroy hardening — evita stuck em DRAINING quando cluster instances
+  # já não existem (VPS deregistered, EC2 scaled down, etc.)
+  wait_for_steady_state = false
+  force_delete          = true
+
+  timeouts {
+    delete = "5m"
+  }
+
   dynamic "load_balancer" {
     for_each = length(var.arn_target_group) > 0 ? zipmap(var.arn_target_group, var.container_port) : {}
     content {

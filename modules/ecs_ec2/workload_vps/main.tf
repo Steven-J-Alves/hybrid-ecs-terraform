@@ -85,6 +85,15 @@ resource "aws_ecs_service" "vps" {
   desired_count   = var.desired_count
   launch_type     = "EXTERNAL"
 
+  # Destroy hardening — CRITICAL para services EXTERNAL, que ficam presos
+  # em DRAINING quando o VPS é deregistered antes do TF destroy correr.
+  wait_for_steady_state = false
+  force_delete          = true
+
+  timeouts {
+    delete = "5m"
+  }
+
   enable_execute_command = true
 
   deployment_circuit_breaker {

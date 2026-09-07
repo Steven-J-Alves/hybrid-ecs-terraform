@@ -5,7 +5,21 @@
       "Sid": "ECR",
       "Effect": "Allow",
       "Action": [
-        "ecr:*"
+        "ecr:CreateRepository",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:DeleteRepository",
+        "ecr:DeleteRepositoryPolicy",
+        "ecr:DescribeImages",
+        "ecr:DescribeRepositories",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetRepositoryPolicy",
+        "ecr:ListTagsForResource",
+        "ecr:PutImageScanningConfiguration",
+        "ecr:PutImageTagMutability",
+        "ecr:PutLifecyclePolicy",
+        "ecr:SetRepositoryPolicy",
+        "ecr:TagResource",
+        "ecr:UntagResource"
       ],
       "Resource": "*"
     },

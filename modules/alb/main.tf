@@ -9,7 +9,7 @@ resource "aws_alb" "alb" {
   security_groups    = var.security_group
   load_balancer_type = "application"
   internal           = var.internal
-  enable_http2       = var.internal
+  enable_http2       = true
   idle_timeout       = 30
 }
 

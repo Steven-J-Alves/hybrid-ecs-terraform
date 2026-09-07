@@ -64,17 +64,18 @@ resource "aws_lb_target_group" "front_vps" {
   port        = 80
   protocol    = "HTTP"
 
-  # Traefik on the VPS returns 404 on GET / without a Host header (no default
-  # router); accept 200-499 as healthy — Traefik being alive at all is enough.
-  # For per-route health, wire dedicated healthchecks inside Traefik labels.
+  # Hits Traefik's built-in /ping (enabled by role `traefik-ping`). Returns 200
+  # only when Traefik itself is healthy — no Host header needed (ALB TGs cannot
+  # send custom headers). When Traefik is down, ALB drains traffic away from
+  # the VPS target, eliminating the 504s the split was surfacing to end users.
   health_check {
-    path                = "/"
+    path                = "/ping"
     protocol            = "HTTP"
     healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 15
-    matcher             = "200-499"
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 10
+    matcher             = "200"
   }
 }
 

@@ -79,7 +79,10 @@ resource "aws_ecs_task_definition" "vps" {
   }])
 
   lifecycle {
-    ignore_changes = [container_definitions, tags]
+    # container_definitions removed from ignore_changes: CI redeploy uses
+    # --force-new-deployment on :latest tag (no task-def change), so TF is
+    # the only writer here. Keeping the ignore blocked Traefik label updates.
+    ignore_changes = [tags]
   }
 }
 

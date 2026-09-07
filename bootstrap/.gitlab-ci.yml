@@ -74,6 +74,7 @@ bootstrap:apply:
   needs: [ bootstrap:plan ]
 
 bootstrap:destroy:
+  needs: []
   extends: .bootstrap_base
   stage: destroy
   environment:

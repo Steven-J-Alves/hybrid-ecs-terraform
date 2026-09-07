@@ -69,6 +69,7 @@ apps:prod:apply:
   needs: [ apps:prod:plan ]
 
 apps:prod:destroy:
+  needs: []
   extends: .apps_base
   stage: destroy
   variables:
@@ -140,6 +141,7 @@ apps:homolog:apply:
   needs: [ apps:homolog:plan ]
 
 apps:homolog:destroy:
+  needs: []
   extends: .apps_base
   stage: destroy
   variables:

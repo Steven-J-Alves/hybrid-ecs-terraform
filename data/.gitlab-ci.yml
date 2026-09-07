@@ -60,6 +60,7 @@ data:prod:apply:
   needs: [ data:prod:plan ]
 
 data:prod:destroy:
+  needs: []
   extends: .data_base
   stage: destroy
   variables:

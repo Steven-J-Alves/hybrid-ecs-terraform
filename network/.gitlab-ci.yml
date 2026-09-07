@@ -55,6 +55,7 @@ network:apply:
   needs: [ network:plan ]
 
 network:destroy:
+  needs: []
   extends: .network_base
   stage: destroy
   environment:

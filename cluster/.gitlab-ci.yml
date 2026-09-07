@@ -67,6 +67,7 @@ cluster:prod:apply:
   needs: [ cluster:prod:plan ]
 
 cluster:prod:destroy:
+  needs: []
   extends: .cluster_base
   stage: destroy
   variables:
@@ -138,6 +139,7 @@ cluster:homolog:apply:
   needs: [ cluster:homolog:plan ]
 
 cluster:homolog:destroy:
+  needs: []
   extends: .cluster_base
   stage: destroy
   variables:

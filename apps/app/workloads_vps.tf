@@ -52,15 +52,15 @@ variable "vps_tailscale_ip" {
 }
 
 variable "vps_front_traffic_weight" {
-  description = "Weight assigned to the VPS side in the front weighted forward (0-100). Cap at 30 — VPS does not autoscale."
+  description = "Weight assigned to the VPS side in the front weighted forward (0-100). Set to 100 to fully cut over to VPS (AWS side gets weight 0 and stops receiving traffic)."
   type        = number
-  default     = 20
+  default     = 100
 }
 
 variable "vps_api_traffic_weight" {
-  description = "Weight assigned to the VPS side in the api weighted forward (0-100). Direct API access without going through the frontend."
+  description = "Weight assigned to the VPS side in the api weighted forward (0-100). Set to 100 to fully cut over to VPS."
   type        = number
-  default     = 20
+  default     = 100
 }
 
 # One TG per ALB per workload — AWS ELBv2 rejects the same TG on more than

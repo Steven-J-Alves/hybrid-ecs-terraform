@@ -1,179 +1,148 @@
-<mxfile host="app.diagrams.net" agent="drawio-generate" version="24.0.0">
-  <diagram id="hybrid-infra" name="hybrid-ecs-terraform stacks">
-    <mxGraphModel dx="1800" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-
-        <mxCell id="title" value="hybrid-ecs-terraform — Stacks &amp; Resources (AWS side · us-east-1)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#232F3E;" vertex="1" parent="1">
-          <mxGeometry x="380" y="16" width="1000" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="subtitle" value="Apply order: bootstrap → network → cluster → data (planned) → apps · All via GitLab CI" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#666;" vertex="1" parent="1">
-          <mxGeometry x="380" y="46" width="1000" height="20" as="geometry" />
-        </mxCell>
-
-        <mxCell id="stack-boot" value="Stack 0 · bootstrap/  (local state · applied once · admin-only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="60" y="90" width="1680" height="170" as="geometry" />
-        </mxCell>
-
-        <mxCell id="ci-user" value="IAM user&#xa;kk-hybrid-terraform-ci&#xa;(access-key used by all CI pipelines)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management_iam;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-boot">
-          <mxGeometry x="30" y="40" width="60" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="iam-net-policy" value="Policy · kk-hybrid-terraform-network-policy&#xa;(VPC + NAT + ACM + Route53 DNS validation + SSM public params + EC2 + IAM roles/profiles)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=9;spacingLeft=8;align=left;" vertex="1" parent="stack-boot">
-          <mxGeometry x="140" y="40" width="400" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="iam-cluster-policy" value="Policy · kk-hybrid-terraform-cluster-policy&#xa;(ECS cluster + capacity provider + ASG + LT + ALB base + SSM activations + IAM roles)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=9;spacingLeft=8;align=left;" vertex="1" parent="stack-boot">
-          <mxGeometry x="560" y="40" width="400" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="iam-apps-policy" value="Policy · kk-hybrid-terraform-apps-policy&#xa;(ECR :* on p-app-* + ECS services + ELB rules + TG + register/deregister targets + IAM PassRole + Route53 records)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=9;spacingLeft=8;align=left;" vertex="1" parent="stack-boot">
-          <mxGeometry x="980" y="40" width="670" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="ddb-locks" value="DynamoDB tables (state locks)&#xa;kriolu-kloud-hybrid-{network,cluster,apps,data}-terraform-lock" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3334B9;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-boot">
-          <mxGeometry x="140" y="120" width="60" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="s3-state" value="S3 · kriolu-kloud-terraform-tfstates&#xa;keys: hybrid-{network,cluster,apps,data}/*.tfstate" style="text;html=1;strokeColor=#7AA116;fillColor=#F2F6E8;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Courier New;spacingLeft=6;" vertex="1" parent="stack-boot">
-          <mxGeometry x="360" y="120" width="600" height="40" as="geometry" />
-        </mxCell>
-
-        <mxCell id="stack-net" value="Stack 1 · network/  (VPC 10.230.0.0/16)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EBFF;strokeColor=#8C4FFF;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="60" y="290" width="850" height="290" as="geometry" />
-        </mxCell>
-
-        <mxCell id="net-vpc-lbl" value="VPC hybrid · 3 AZs (a/b/c) · 9 subnets (public + private compute + db)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#8C4FFF;spacingLeft=8;" vertex="1" parent="stack-net">
-          <mxGeometry x="20" y="30" width="800" height="20" as="geometry" />
-        </mxCell>
-
-        <mxCell id="net-subnets" value="Public   · 10.230.0.0/20   → 3 subnets  · route: 0.0.0.0/0 → IGW  · 100.64.0.0/10 → tsgw ENI&#xa;Private  · 10.230.48.0/20  → 3 subnets  · route: 0.0.0.0/0 → NAT · 100.64.0.0/10 → tsgw ENI&#xa;Database · 10.230.144.0/20 → 3 subnets  · route: local only    · 100.64.0.0/10 → tsgw ENI" style="text;html=1;strokeColor=#8C4FFF;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Courier New;spacingLeft=8;" vertex="1" parent="stack-net">
-          <mxGeometry x="20" y="60" width="810" height="80" as="geometry" />
-        </mxCell>
-
-        <mxCell id="net-igw" value="IGW" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-net">
-          <mxGeometry x="30" y="160" width="50" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="net-natgw" value="NAT GW&#xa;(single, cost-opt)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-net">
-          <mxGeometry x="120" y="160" width="50" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="net-acm" value="ACM&#xa;*.kriolu-kloud.cv&#xa;DNS-validated" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#C925D1;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.certificate_manager;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-net">
-          <mxGeometry x="220" y="160" width="50" height="50" as="geometry" />
-        </mxCell>
-
-        <mxCell id="net-note" value="Route53 zone kriolu-kloud.cv is externally owned (not created by TF). ACM DNS validation records are added to it via aws_route53_record." style="text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontStyle=2;spacingLeft=8;" vertex="1" parent="stack-net">
-          <mxGeometry x="330" y="170" width="490" height="30" as="geometry" />
-        </mxCell>
-
-        <mxCell id="net-outputs" value="Outputs consumed by cluster/, apps/, tsgw:  vpc_id, subnet ids (public/private/db), acm_certificate_arn" style="text;html=1;strokeColor=#8C4FFF;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;spacingLeft=8;fontStyle=2;" vertex="1" parent="stack-net">
-          <mxGeometry x="20" y="230" width="810" height="30" as="geometry" />
-        </mxCell>
-
-        <mxCell id="stack-cluster" value="Stack 2 · cluster/  (ECS + ALBs + ASG)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#ED7100;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="940" y="290" width="800" height="290" as="geometry" />
-        </mxCell>
-
-        <mxCell id="cluster-ecs" value="ECS cluster p-hybrid-apis" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#ED7100;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_container_service;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-cluster">
-          <mxGeometry x="20" y="40" width="60" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="cluster-asg" value="ASG capacity provider · Graviton t4g Spot&#xa;min=1 max=5 · scaling policy = target 70% mem&#xa;Launch template: Amazon Linux 2 ECS-optimized arm64" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#ED7100;fontSize=9;spacingLeft=8;align=left;" vertex="1" parent="stack-cluster">
-          <mxGeometry x="100" y="40" width="330" height="90" as="geometry" />
-        </mxCell>
-
-        <mxCell id="cluster-alb-pub" value="ALB public&#xa;p-hybrid-apis-public-alb&#xa;:443 (HTTPS, ACM cert)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-cluster">
-          <mxGeometry x="460" y="40" width="60" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="cluster-alb-pvt" value="ALB private&#xa;p-hybrid-apis-private-alb&#xa;:80 + :443 (internal)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="stack-cluster">
-          <mxGeometry x="620" y="40" width="60" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="cluster-outputs" value="Outputs consumed by apps/:  ecs_cluster_id/name · https_listener_arn_{public,private} · http_listener_arn_private · alb_dns_{public,private}" style="text;html=1;strokeColor=#ED7100;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;spacingLeft=8;fontStyle=2;" vertex="1" parent="stack-cluster">
-          <mxGeometry x="20" y="150" width="760" height="30" as="geometry" />
-        </mxCell>
-
-        <mxCell id="cluster-sg-note" value="SG-alb-public: 443 from 0.0.0.0/0   ·   SG-alb-private: 80+443 from VPC CIDR + VPN CIDR   ·   SG-services-private: dynamic 32768-61000 from SG-alb-*" style="text;html=1;strokeColor=#7AA116;fillColor=#F2F6E8;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;spacingLeft=8;" vertex="1" parent="stack-cluster">
-          <mxGeometry x="20" y="200" width="760" height="30" as="geometry" />
-        </mxCell>
-
-        <mxCell id="stack-data" value="Stack 3 · data/  (RDS + Redis · PLANNED, not applied yet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE9E7;strokeColor=#E64A19;fontSize=12;fontStyle=1;dashed=1;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="60" y="610" width="850" height="170" as="geometry" />
-        </mxCell>
-
-        <mxCell id="data-rds" value="RDS PostgreSQL&#xa;t4g.small · Multi-AZ off" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3334B9;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.rds;verticalLabelPosition=bottom;verticalAlign=top;dashed=1;" vertex="1" parent="stack-data">
-          <mxGeometry x="30" y="40" width="60" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="data-redis" value="ElastiCache Redis&#xa;t4g.micro" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#C925D1;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elasticache;verticalLabelPosition=bottom;verticalAlign=top;dashed=1;" vertex="1" parent="stack-data">
-          <mxGeometry x="150" y="40" width="60" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="data-note" value="Both in database subnets 10.230.144.0/20.&#xa;SG-data-private: 5432 + 6379 from SG-services-private only.&#xa;Outputs consumed by apps/ workloads:  rds_endpoint, rds_port, redis_endpoint." style="text;html=1;strokeColor=#E64A19;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;spacingLeft=8;fontStyle=2;" vertex="1" parent="stack-data">
-          <mxGeometry x="240" y="40" width="580" height="80" as="geometry" />
-        </mxCell>
-
-        <mxCell id="stack-apps" value="Stack 4 · apps/app  (5 workloads × 2 launch types = 10 ECS services)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F2F8;strokeColor=#147EBA;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="940" y="610" width="800" height="440" as="geometry" />
-        </mxCell>
-
-        <mxCell id="apps-http-title" value="HTTP workloads  (ECR + task-def + service + TG-pvt + TG-pub + listener rules + Route53 record)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;fontColor=#147EBA;spacingLeft=8;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="30" width="760" height="20" as="geometry" />
-        </mxCell>
-
-        <mxCell id="wl-front" value="front (:80)&#xa;host_header app.kriolu-kloud.cv&#xa;public + private (weighted VPS split, alt direct.*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#147EBA;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="55" width="370" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="wl-api" value="api (:4004)&#xa;host_header app-api.kriolu-kloud.cv&#xa;public + private (weighted VPS split, alt direct-api.*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#147EBA;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="410" y="55" width="370" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="apps-worker-title" value="Worker workloads  (ECR + task-def + service — no ALB, no TG, no route)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;fontColor=#147EBA;spacingLeft=8;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="130" width="760" height="20" as="geometry" />
-        </mxCell>
-
-        <mxCell id="wl-worker" value="worker&#xa;pulls from api" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="155" width="240" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="wl-scheduler" value="scheduler&#xa;cron dispatcher" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="280" y="155" width="240" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="wl-manager" value="manager&#xa;orchestrator (calls api)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="540" y="155" width="240" height="50" as="geometry" />
-        </mxCell>
-
-        <mxCell id="apps-vps-title" value="Same 5 workloads, launch_type=EXTERNAL (VPS via ECS Anywhere)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;fontColor=#2e7d32;spacingLeft=8;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="220" width="760" height="20" as="geometry" />
-        </mxCell>
-
-        <mxCell id="wl-vps-http" value="front-vps  +  api-vps    (dockerLabels drive Traefik routers, alt hosts: direct.* / direct-api.*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="245" width="760" height="35" as="geometry" />
-        </mxCell>
-        <mxCell id="wl-vps-worker" value="worker-vps  ·  scheduler-vps  ·  manager-vps    (extraHosts to Traefik via 172.17.0.1 for inter-workload calls)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="285" width="760" height="35" as="geometry" />
-        </mxCell>
-
-        <mxCell id="apps-tg-note" value="Weighted split TGs (per ALB + per workload):&#xa;p-app-front-pub, p-app-front-vps-pub, p-app-front-pvt, p-app-front-vps-pvt&#xa;p-app-api-pub,   p-app-api-vps-pub,   p-app-api-pvt,   p-app-api-vps-pvt&#xa;Weights via variables vps_front_traffic_weight / vps_api_traffic_weight (0-100)." style="text;html=1;strokeColor=#147EBA;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontFamily=Courier New;spacingLeft=8;" vertex="1" parent="stack-apps">
-          <mxGeometry x="20" y="335" width="760" height="90" as="geometry" />
-        </mxCell>
-
-        <mxCell id="gitlab-ci" value="GitLab CI · gitlab.kriolu-kloud.cv&#xa;Per-stack validate → plan → apply (manual) → destroy (manual, needs: [])&#xa;Runner: vps (shell executor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;spacingLeft=8;align=left;verticalAlign=top;spacingTop=6;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="60" y="1080" width="600" height="80" as="geometry" />
-        </mxCell>
-
-        <mxCell id="companion" value="Companion repos (glue not in this project)&#xa;• hybrid-networking-terraform · tsgw + ecs-anywhere-activation&#xa;• hybrid-vps-ansible · VPS host config (tailscale, ecs-anywhere agent, traefik multinet + /ping)&#xa;• apps-for-deploy/test-apps · 5 container images (branch hybrid-arch-vps-aws)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;fontSize=10;spacingLeft=8;align=left;verticalAlign=top;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="700" y="1080" width="700" height="80" as="geometry" />
-        </mxCell>
-
-        <mxCell id="e-net-cluster" value="remote state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#8C4FFF;fontSize=9;" edge="1" source="stack-net" target="stack-cluster" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-cluster-apps" value="remote state (cluster+ALBs)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#ED7100;fontSize=9;" edge="1" source="stack-cluster" target="stack-apps" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-net-data" value="remote state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#8C4FFF;fontSize=9;dashed=1;" edge="1" source="stack-net" target="stack-data" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e-boot-all" value="IAM policies attached (all stacks use ci user)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#e65100;dashed=1;fontSize=9;" edge="1" source="stack-boot" target="stack-net" parent="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="hybrid-infra" name="hybrid-ecs-terraform stacks">
+        <mxGraphModel dx="1365" dy="833" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1800" pageHeight="1400" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="hybrid-ecs-terraform — Stacks &amp; Resources (AWS side · us-east-1)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1;fontColor=#232F3E;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="16" width="1000" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="Apply order: bootstrap → network → cluster → data (planned) → apps · All via GitLab CI" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#666;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="46" width="1000" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="stack-boot" value="Stack 0 · bootstrap/  (local state · applied once · admin-only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="90" width="1680" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="ci-user" value="IAM user&#10;kk-hybrid-terraform-ci&#10;(access-key used by all CI pipelines)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD344C;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management_iam;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-boot" vertex="1">
+                    <mxGeometry x="30" y="40" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="iam-net-policy" value="Policy · kk-hybrid-terraform-network-policy&#10;(VPC + NAT + ACM + Route53 DNS validation + SSM public params + EC2 + IAM roles/profiles)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=9;spacingLeft=8;align=left;" parent="stack-boot" vertex="1">
+                    <mxGeometry x="140" y="40" width="400" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="iam-cluster-policy" value="Policy · kk-hybrid-terraform-cluster-policy&#10;(ECS cluster + capacity provider + ASG + LT + ALB base + SSM activations + IAM roles)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=9;spacingLeft=8;align=left;" parent="stack-boot" vertex="1">
+                    <mxGeometry x="560" y="40" width="400" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="iam-apps-policy" value="Policy · kk-hybrid-terraform-apps-policy&#10;(ECR :* on p-app-* + ECS services + ELB rules + TG + register/deregister targets + IAM PassRole + Route53 records)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;fontSize=9;spacingLeft=8;align=left;" parent="stack-boot" vertex="1">
+                    <mxGeometry x="980" y="40" width="670" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="ddb-locks" value="DynamoDB tables (state locks)&#10;kriolu-kloud-hybrid-{network,cluster,apps,data}-terraform-lock" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3334B9;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=9;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-boot" vertex="1">
+                    <mxGeometry x="140" y="120" width="60" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3-state" value="S3 · kriolu-kloud-terraform-tfstates&#10;keys: hybrid-{network,cluster,apps,data}/*.tfstate" style="text;html=1;strokeColor=#7AA116;fillColor=#F2F6E8;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Courier New;spacingLeft=6;" parent="stack-boot" vertex="1">
+                    <mxGeometry x="360" y="120" width="600" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="stack-net" value="Stack 1 · network/  (VPC 10.230.0.0/16)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F4EBFF;strokeColor=#8C4FFF;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="290" width="850" height="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-vpc-lbl" value="VPC hybrid · 3 AZs (a/b/c) · 9 subnets (public + private compute + db)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#8C4FFF;spacingLeft=8;" parent="stack-net" vertex="1">
+                    <mxGeometry x="20" y="30" width="800" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-subnets" value="Public   · 10.230.0.0/20   → 3 subnets  · route: 0.0.0.0/0 → IGW  · 100.64.0.0/10 → tsgw ENI&#10;Private  · 10.230.48.0/20  → 3 subnets  · route: 0.0.0.0/0 → NAT · 100.64.0.0/10 → tsgw ENI&#10;Database · 10.230.144.0/20 → 3 subnets  · route: local only    · 100.64.0.0/10 → tsgw ENI" style="text;html=1;strokeColor=#8C4FFF;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Courier New;spacingLeft=8;" parent="stack-net" vertex="1">
+                    <mxGeometry x="20" y="60" width="810" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-igw" value="IGW" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-net" vertex="1">
+                    <mxGeometry x="30" y="160" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-natgw" value="NAT GW&#10;(single, cost-opt)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-net" vertex="1">
+                    <mxGeometry x="120" y="160" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-acm" value="ACM&#10;*.kriolu-kloud.cv&#10;DNS-validated" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#C925D1;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.certificate_manager;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-net" vertex="1">
+                    <mxGeometry x="220" y="160" width="50" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-note" value="Route53 zone kriolu-kloud.cv is externally owned (not created by TF). ACM DNS validation records are added to it via aws_route53_record." style="text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontStyle=2;spacingLeft=8;" parent="stack-net" vertex="1">
+                    <mxGeometry x="330" y="170" width="490" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="net-outputs" value="Outputs consumed by cluster/, apps/, tsgw:  vpc_id, subnet ids (public/private/db), acm_certificate_arn" style="text;html=1;strokeColor=#8C4FFF;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;spacingLeft=8;fontStyle=2;" parent="stack-net" vertex="1">
+                    <mxGeometry x="20" y="230" width="810" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="stack-cluster" value="Stack 2 · cluster/  (ECS + ALBs + ASG)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#ED7100;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="290" width="800" height="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="cluster-ecs" value="ECS cluster p-hybrid-apis" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#ED7100;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_container_service;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-cluster" vertex="1">
+                    <mxGeometry x="20" y="40" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cluster-asg" value="ASG capacity provider · Graviton t4g Spot&#10;min=1 max=5 · scaling policy = target 70% mem&#10;Launch template: Amazon Linux 2 ECS-optimized arm64" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#ED7100;fontSize=9;spacingLeft=8;align=left;" parent="stack-cluster" vertex="1">
+                    <mxGeometry x="100" y="40" width="330" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="cluster-alb-pub" value="ALB public&#10;p-hybrid-apis-public-alb&#10;:443 (HTTPS, ACM cert)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-cluster" vertex="1">
+                    <mxGeometry x="460" y="40" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cluster-alb-pvt" value="ALB private&#10;p-hybrid-apis-private-alb&#10;:80 + :443 (internal)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;verticalLabelPosition=bottom;verticalAlign=top;" parent="stack-cluster" vertex="1">
+                    <mxGeometry x="620" y="40" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="cluster-outputs" value="Outputs consumed by apps/:  ecs_cluster_id/name · https_listener_arn_{public,private} · http_listener_arn_private · alb_dns_{public,private}" style="text;html=1;strokeColor=#ED7100;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;spacingLeft=8;fontStyle=2;" parent="stack-cluster" vertex="1">
+                    <mxGeometry x="20" y="150" width="760" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="cluster-sg-note" value="SG-alb-public: 443 from 0.0.0.0/0   ·   SG-alb-private: 80+443 from VPC CIDR + VPN CIDR   ·   SG-services-private: dynamic 32768-61000 from SG-alb-*" style="text;html=1;strokeColor=#7AA116;fillColor=#F2F6E8;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;spacingLeft=8;" parent="stack-cluster" vertex="1">
+                    <mxGeometry x="20" y="200" width="760" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="stack-data" value="Stack 3 · data/  (RDS + Redis · PLANNED, not applied yet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FBE9E7;strokeColor=#E64A19;fontSize=12;fontStyle=1;dashed=1;verticalAlign=top;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="610" width="850" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-rds" value="RDS PostgreSQL&#10;t4g.small · Multi-AZ off" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#3334B9;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.rds;verticalLabelPosition=bottom;verticalAlign=top;dashed=1;" parent="stack-data" vertex="1">
+                    <mxGeometry x="30" y="40" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-redis" value="ElastiCache Redis&#10;t4g.micro" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#C925D1;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elasticache;verticalLabelPosition=bottom;verticalAlign=top;dashed=1;" parent="stack-data" vertex="1">
+                    <mxGeometry x="150" y="40" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-note" value="Both in database subnets 10.230.144.0/20.&#10;SG-data-private: 5432 + 6379 from SG-services-private only.&#10;Outputs consumed by apps/ workloads:  rds_endpoint, rds_port, redis_endpoint." style="text;html=1;strokeColor=#E64A19;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;spacingLeft=8;fontStyle=2;" parent="stack-data" vertex="1">
+                    <mxGeometry x="240" y="40" width="580" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="stack-apps" value="Stack 4 · apps/app  (5 workloads × 2 launch types = 10 ECS services)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E6F2F8;strokeColor=#147EBA;fontSize=12;fontStyle=1;verticalAlign=top;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="610" width="800" height="440" as="geometry"/>
+                </mxCell>
+                <mxCell id="apps-http-title" value="HTTP workloads  (ECR + task-def + service + TG-pvt + TG-pub + listener rules + Route53 record)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;fontColor=#147EBA;spacingLeft=8;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="30" width="760" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-front" value="front (:80)&#10;host_header app.kriolu-kloud.cv&#10;public + private (weighted VPS split, alt direct.*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#147EBA;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="55" width="370" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-api" value="api (:4004)&#10;host_header app-api.kriolu-kloud.cv&#10;public + private (weighted VPS split, alt direct-api.*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#147EBA;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="410" y="55" width="370" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="apps-worker-title" value="Worker workloads  (ECR + task-def + service — no ALB, no TG, no route)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;fontColor=#147EBA;spacingLeft=8;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="130" width="760" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-worker" value="worker&#10;pulls from api" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="155" width="240" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-scheduler" value="scheduler&#10;cron dispatcher" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="280" y="155" width="240" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-manager" value="manager&#10;orchestrator (calls api)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="540" y="155" width="240" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="apps-vps-title" value="Same 5 workloads, launch_type=EXTERNAL (VPS via ECS Anywhere)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=1;fontColor=#2e7d32;spacingLeft=8;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="220" width="760" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-vps-http" value="front-vps  +  api-vps    (dockerLabels drive Traefik routers, alt hosts: direct.* / direct-api.*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="245" width="760" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="wl-vps-worker" value="worker-vps  ·  scheduler-vps  ·  manager-vps    (extraHosts to Traefik via 172.17.0.1 for inter-workload calls)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcedc8;strokeColor=#558b2f;fontSize=10;spacingLeft=8;align=left;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="285" width="760" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="apps-tg-note" value="Weighted split TGs (per ALB + per workload):&#10;p-app-front-pub, p-app-front-vps-pub, p-app-front-pvt, p-app-front-vps-pvt&#10;p-app-api-pub,   p-app-api-vps-pub,   p-app-api-pvt,   p-app-api-vps-pvt&#10;Weights via variables vps_front_traffic_weight / vps_api_traffic_weight (0-100)." style="text;html=1;strokeColor=#147EBA;fillColor=#ffffff;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=9;fontFamily=Courier New;spacingLeft=8;" parent="stack-apps" vertex="1">
+                    <mxGeometry x="20" y="335" width="760" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="gitlab-ci" value="GitLab CI · gitlab.kriolu-kloud.cv&#10;Per-stack validate → plan → apply (manual) → destroy (manual, needs: [])&#10;Runner: vps (shell executor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;spacingLeft=8;align=left;verticalAlign=top;spacingTop=6;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="1080" width="600" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="companion" value="Companion repos (glue not in this project)&#10;• hybrid-networking-terraform · tsgw + ecs-anywhere-activation&#10;• hybrid-vps-ansible · VPS host config (tailscale, ecs-anywhere agent, traefik multinet + /ping)&#10;• apps-for-deploy/test-apps · 5 container images (branch hybrid-arch-vps-aws)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;fontSize=10;spacingLeft=8;align=left;verticalAlign=top;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="700" y="1080" width="700" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-net-cluster" value="remote state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#8C4FFF;fontSize=9;" parent="1" source="stack-net" target="stack-cluster" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-cluster-apps" value="remote state (cluster+ALBs)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#ED7100;fontSize=9;" parent="1" source="stack-cluster" target="stack-apps" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-net-data" value="remote state" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#8C4FFF;fontSize=9;dashed=1;" parent="1" source="stack-net" target="stack-data" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e-boot-all" value="IAM policies attached (all stacks use ci user)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;strokeColor=#e65100;dashed=1;fontSize=9;" parent="1" source="stack-boot" target="stack-net" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>

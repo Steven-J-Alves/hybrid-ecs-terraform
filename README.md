@@ -1,5 +1,7 @@
 # hybrid-ecs-terraform
 
+![Infrastructure overview](infrastructure-overview.png)
+
 Terraform for the **Kriolu Kloud hybrid VPS↔AWS architecture** — a single ECS cluster (`p-hybrid-apis`) that runs container instances of two launch types simultaneously:
 
 - **EC2 (AWS side)** — Graviton `t4g` Spot autoscaling group in the hybrid VPC
